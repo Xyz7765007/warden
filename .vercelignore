@@ -1,0 +1,8 @@
+# Only the app ships. Scripts, tests and the benchmark data stay in the repo.
+data/external
+data/eval/files
+data/eval/cases.json
+scripts
+tests
+test-results
+playwright-report

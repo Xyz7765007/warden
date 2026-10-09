@@ -1,0 +1,29 @@
+From: "Aurel Store" <news@aurel.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?TmV3IGFycml2YWxz?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <kzikkb2dcub@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+VGhyZWUgbmV3IGtldHRsZXMganVzdCBsYW5kZWQuCgpTaG9wIHRoZSBjb2xsZWN0aW9uIGJlZm9y
+ZSB0aGUgZmVzdGl2ZSBzYWxlIGVuZHMu
+--alt
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGJvZHk+PGRpdiBzdHlsZT0iZGlzcGxheTpub25lO21heC1oZWlnaHQ6MDtvdmVyZmxv
+dzpoaWRkZW4iPlVwIHRvIDMwJSBvZmYgdGhpcyBEaXdhbGkuPC9kaXY+PHA+VGhyZWUgbmV3IGtl
+dHRsZXMganVzdCBsYW5kZWQuPC9wPjxwPlNob3AgdGhlIGNvbGxlY3Rpb24gYmVmb3JlIHRoZSBm
+ZXN0aXZlIHNhbGUgZW5kcy48L3A+PHAgc3R5bGU9ImNvbG9yOiM4ODg7Zm9udC1zaXplOjEycHgi
+PlNlbnQgZnJvbSB0aGUgU3VuZGFyYW0gTG9naXN0aWNzIHZlbmRvciBwb3J0YWw8L3A+PC9ib2R5
+PjwvaHRtbD4=
+--alt--
+--mix--

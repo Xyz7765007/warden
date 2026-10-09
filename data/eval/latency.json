@@ -1,0 +1,36 @@
+{
+ "generatedAt": "2026-10-08T07:32:32.952Z",
+ "base": "https://warden-cyan-beta.vercel.app",
+ "text": {
+  "n": 55,
+  "p50": 4,
+  "p95": 7
+ },
+ "files": {
+  "PDF": {
+   "n": 6,
+   "p50": 15,
+   "max": 15
+  },
+  "Word": {
+   "n": 3,
+   "p50": 7,
+   "max": 9
+  },
+  "Email": {
+   "n": 6,
+   "p50": 6,
+   "max": 10
+  },
+  "Web page": {
+   "n": 6,
+   "p50": 8,
+   "max": 9
+  },
+  "Image (OCR)": {
+   "n": 3,
+   "p50": 546,
+   "max": 651
+  }
+ }
+}

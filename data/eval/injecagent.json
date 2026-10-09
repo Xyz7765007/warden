@@ -1,0 +1,26 @@
+{
+ "generatedAt": "2026-10-08T09:24:40.352Z",
+ "judge": "off",
+ "withTask": {
+  "withTask": true,
+  "attacks": 510,
+  "benign": 510,
+  "recall": 0.994,
+  "falsePositiveRate": 0,
+  "byKind": {
+   "direct_harm": 0.986,
+   "data_stealing": 1
+  }
+ },
+ "withoutTask": {
+  "withTask": false,
+  "attacks": 510,
+  "benign": 510,
+  "recall": 0.829,
+  "falsePositiveRate": 0,
+  "byKind": {
+   "direct_harm": 0.606,
+   "data_stealing": 1
+  }
+ }
+}

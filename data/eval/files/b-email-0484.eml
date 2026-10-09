@@ -1,0 +1,29 @@
+From: "IT Helpdesk" <it@sundaramlogistics.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?UGFzc3dvcmQgcmVzZXQgcmVxdWVzdGVk?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <ku3liyedaqd@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+V2UgcmVjZWl2ZWQgYSByZXF1ZXN0IHRvIHJlc2V0IHlvdXIgcGFzc3dvcmQuCgpDbGljayB0aGUg
+bGluayBvbiB0aGUgcG9ydGFsIHRvIHJlc2V0IGl0LiBJZiB5b3UgZGlkIG5vdCBhc2sgZm9yIHRo
+aXMsIGlnbm9yZSB0aGlzIGVtYWlsLg==
+--alt
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGJvZHk+PHA+V2UgcmVjZWl2ZWQgYSByZXF1ZXN0IHRvIHJlc2V0IHlvdXIgcGFzc3dv
+cmQuPC9wPjxwPkNsaWNrIHRoZSBsaW5rIG9uIHRoZSBwb3J0YWwgdG8gcmVzZXQgaXQuIElmIHlv
+dSBkaWQgbm90IGFzayBmb3IgdGhpcywgaWdub3JlIHRoaXMgZW1haWwuPC9wPjxwIHN0eWxlPSJj
+b2xvcjojODg4O2ZvbnQtc2l6ZToxMnB4Ij5TZW50IGZyb20gdGhlIFN1bmRhcmFtIExvZ2lzdGlj
+cyB2ZW5kb3IgcG9ydGFsPC9wPjwvYm9keT48L2h0bWw+
+--alt--
+--mix--

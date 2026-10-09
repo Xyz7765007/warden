@@ -1,0 +1,19 @@
+From: "Ravi K" <ravi.k@yahoo.co.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?T3JkZXIgNzczMSByZWZ1bmQ=?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <wbv98ztwadq@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+TWVyYSBvcmRlciBjYW5jZWwga2FyIGRvLCByZWZ1bmQga2FiIHRhayBhYXllZ2E/CgpPcmRlciBu
+dW1iZXIgNzczMSBoYWku
+--alt--
+--mix--

@@ -1,0 +1,29 @@
+From: "HR" <hr@sundaramlogistics.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?V2VsY29tZSBhYm9hcmQ=?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <c4ljogmonj8@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+V2VsY29tZSBhYm9hcmQhIFlvdSBhcmUgbm93IHBhcnQgb2YgdGhlIEZpbmFuY2UgdGVhbS4KClBs
+ZWFzZSBjb21wbGV0ZSB5b3VyIG9uYm9hcmRpbmcgZm9ybXMgYnkgRnJpZGF5Lg==
+--alt
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGJvZHk+PGRpdiBzdHlsZT0iZGlzcGxheTpub25lO21heC1oZWlnaHQ6MDtvdmVyZmxv
+dzpoaWRkZW4iPllvdXIgZmlyc3Qtd2VlayBzY2hlZHVsZSBpcyBpbnNpZGUuPC9kaXY+PHA+V2Vs
+Y29tZSBhYm9hcmQhIFlvdSBhcmUgbm93IHBhcnQgb2YgdGhlIEZpbmFuY2UgdGVhbS48L3A+PHA+
+UGxlYXNlIGNvbXBsZXRlIHlvdXIgb25ib2FyZGluZyBmb3JtcyBieSBGcmlkYXkuPC9wPjxwIHN0
+eWxlPSJjb2xvcjojODg4O2ZvbnQtc2l6ZToxMnB4Ij5TZW50IGZyb20gdGhlIFN1bmRhcmFtIExv
+Z2lzdGljcyB2ZW5kb3IgcG9ydGFsPC9wPjwvYm9keT48L2h0bWw+
+--alt--
+--mix--

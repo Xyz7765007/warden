@@ -1,0 +1,20 @@
+From: "Sundaram Bank" <alerts@sundarambank.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?WW91ciBPVFA=?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <kghzq5dzni@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+WW91ciBPVFAgZm9yIGxvZ2luIGlzIDQ4MjkxMy4gSXQgZXhwaXJlcyBpbiAxMCBtaW51dGVzLgoK
+RG8gbm90IHNoYXJlIHlvdXIgT1RQIHdpdGggYW55b25lLiBXZSB3aWxsIG5ldmVyIGFzayBmb3Ig
+aXQu
+--alt--
+--mix--

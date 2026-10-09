@@ -1,0 +1,72 @@
+{
+ "generatedAt": "2026-10-08T09:24:48.923Z",
+ "classifier": "warden-linear-v1",
+ "judge": "off",
+ "seeds": {
+  "known": 17,
+  "novel": 10
+ },
+ "tricks": 18,
+ "chains": 100,
+ "known": {
+  "n": 3383,
+  "caught": 3372,
+  "rate": 99.7
+ },
+ "novel": {
+  "n": 1990,
+  "caught": 994,
+  "rate": 49.9
+ },
+ "safe": {
+  "n": 144,
+  "falseAlarms": 0
+ },
+ "learning": {
+  "seen": {
+   "n": 100,
+   "caught": 41,
+   "misses": 59,
+   "recoveredAfter": 58
+  },
+  "heldOut": {
+   "n": 90,
+   "before": 29,
+   "after": 89
+  },
+  "falseAlarmsAfter": 0
+ },
+ "weakest": [
+  {
+   "chain": "polite+reverse",
+   "caught": 32,
+   "n": 34
+  },
+  {
+   "chain": "authority+reverse",
+   "caught": 32,
+   "n": 34
+  },
+  {
+   "chain": "spaced+reverse",
+   "caught": 32,
+   "n": 34
+  },
+  {
+   "chain": "hinglish+reverse",
+   "caught": 32,
+   "n": 34
+  },
+  {
+   "chain": "synonyms+mdComment",
+   "caught": 33,
+   "n": 34
+  },
+  {
+   "chain": "synonyms+jsonField",
+   "caught": 33,
+   "n": 34
+  }
+ ],
+ "wallSeconds": 7
+}

@@ -1,0 +1,20 @@
+From: "Anjali S" <anjali.s@gmail.com>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?RGFtYWdlZCBwcmVzc3VyZSBjb29rZXI=?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <k4holpzisyk@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+SGksIEkgb3JkZXJlZCBhIHByZXNzdXJlIGNvb2tlciBvbiAyIE9jdG9iZXIgKG9yZGVyIDc3MzEp
+LgoKSXQgYXJyaXZlZCB3aXRoIGEgZGVudCBpbiB0aGUgbGlkLiBDYW4gSSBnZXQgYSByZXBsYWNl
+bWVudCBvciBhIHJlZnVuZD8KClRoYW5rcywgQW5qYWxp
+--alt--
+--mix--

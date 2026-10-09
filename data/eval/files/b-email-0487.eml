@@ -1,0 +1,31 @@
+From: "Shreeji Packaging" <accounts@shreejipack.in>
+To: ap@sundaramlogistics.in
+Subject: =?utf-8?B?Q2hhbmdlIG9mIGJhbmsgYWNjb3VudA==?=
+Date: Tue, 07 Oct 2026 10:12:00 +0530
+Message-ID: <49aqvumua5h@mail.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mix"
+
+--mix
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+RGVhciBBUCB0ZWFtLCB3ZSBhcmUgbW92aW5nIG91ciBjb2xsZWN0aW9ucyBhY2NvdW50LgoKT3Vy
+IG5ldyBhY2NvdW50IGlzIEEvQyAzMzAxMTk4NzY1NDIxMCwgSUZTQyBTQklOMDAwNzc4OC4KClBs
+ZWFzZSBjYWxsIG91ciBmaW5hbmNlIGhlYWQgb24gdGhlIG51bWJlciBvbiBmaWxlIHRvIGNvbmZp
+cm0gYmVmb3JlIHVwZGF0aW5nLg==
+--alt
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGJvZHk+PHA+RGVhciBBUCB0ZWFtLCB3ZSBhcmUgbW92aW5nIG91ciBjb2xsZWN0aW9u
+cyBhY2NvdW50LjwvcD48cD5PdXIgbmV3IGFjY291bnQgaXMgQS9DIDMzMDExOTg3NjU0MjEwLCBJ
+RlNDIFNCSU4wMDA3Nzg4LjwvcD48cD5QbGVhc2UgY2FsbCBvdXIgZmluYW5jZSBoZWFkIG9uIHRo
+ZSBudW1iZXIgb24gZmlsZSB0byBjb25maXJtIGJlZm9yZSB1cGRhdGluZy48L3A+PHAgc3R5bGU9
+ImNvbG9yOiM4ODg7Zm9udC1zaXplOjEycHgiPlNlbnQgZnJvbSB0aGUgU3VuZGFyYW0gTG9naXN0
+aWNzIHZlbmRvciBwb3J0YWw8L3A+PC9ib2R5PjwvaHRtbD4=
+--alt--
+--mix--
