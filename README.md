@@ -41,12 +41,12 @@ All with the LLM judge off: the free, offline layers only. Every number comes fr
 | jackhhao/jailbreak-classification, test split | 87.8% of 139 | 0 of 123 |
 | deepset/prompt-injections, test split (labels many plain role-play requests as attacks) | 26.7% of 60 | 0 of 56 |
 | Red team: 17 known attacks x 18 tricks and 81 two-trick combinations | 99.7% of 3,383 | 0 of 144 |
-| Red team: new wordings no rule covers, before learning, then after learning on unseen disguises | 50% before; 89 of 90 after | 0 of 144 after |
+| Red team: new wordings no rule covers, before learning, then after learning on unseen disguises | 50% before; 87 of 90 after | 0 of 144 after |
 | Independent black-box tests, five rounds of new inputs (fixes after rounds 1 to 4; round 5 on the final build) | 21 of 28 → 22 of 40 → 25 of 50 → 31 of 50 → 28 of 50 | 4 of 24 → 1 of 35 → 3 of 40 → 3 of 40 → 5 of 40 |
 
-With the LLM judge switched on (Claude Sonnet 5.5), the final round's 90 inputs, replayed on the same engine: **42 of 50** attacks caught and **4 of 40** safe inputs flagged, for $0.10 in total. Nothing was tuned on those inputs.
+With the LLM judge switched on (Claude Sonnet 5.5), the final round's 90 inputs replayed on today's build: **43 of 50** attacks caught and **2 of 40** safe inputs flagged, for $0.12 in total (judge off on the same build: 28 of 50 and 3 of 40). Nothing was tuned on those inputs; a QA pass after round 5 made Warden faster and stopped false alarms on real documents.
 
-Live-site latency (server time): 4 ms median for text, 15 ms for a PDF, about 0.5 s for an image (OCR). When a passage is unclear enough to need the LLM judge (on in the live demo), the judge adds about 2 to 3 seconds.
+Live-site latency (server time): 4 ms median for text, 15 ms for a PDF, about 0.5 s for an image (OCR). When a passage is unclear enough to need the LLM judge (on in the live demo), the judge adds about 2 to 8 seconds, depending on how many passages it reviews (at most six).
 
 ## Use it
 
@@ -72,7 +72,7 @@ curl -X POST https://warden-cyan-beta.vercel.app/api/guard \
 ```bash
 npm install
 npm run dev                       # http://localhost:3000
-npx vitest run                    # 130 unit tests
+npx vitest run                    # 145 unit tests
 npx playwright test               # 54 end-to-end tests (set WARDEN_URL to test a deployment)
 ```
 
@@ -96,7 +96,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md): process flow, components, how decisions 
 ## Limitations
 
 - Very small or faint text in images can be missed by OCR.
-- New wordings are the hardest case for the offline layers: on attacks written fresh by outsiders they catch 50% to 75% (28 of 50 in the final round; 42 of 50 with the LLM judge on). The judge only sees passages the free layers find unclear, so an attack that looks entirely ordinary can still pass.
-- Product and developer docs that describe an AI assistant or its system prompt can be flagged (5 of 40 safe inputs in the final round). Flagged sentences are cut and the rest passes on; nothing in that round was blocked.
+- New wordings are the hardest case for the offline layers: on attacks written fresh by outsiders they catch 50% to 75% (28 of 50 in the final round; 43 of 50 with the LLM judge on). The judge only sees passages the free layers find unclear, so an attack that looks entirely ordinary can still pass.
+- Product and developer docs that describe an AI assistant or its system prompt can be flagged (5 of 40 safe inputs in the final round, 3 of 40 on today's build). Flagged sentences are cut and the rest passes on; nothing in that round was blocked.
 - Our own corpus was written alongside the rules, so the public benchmarks, the red team and the independent test sit next to it.
 - Role-play that never asks for anything harmful is passed on purpose.

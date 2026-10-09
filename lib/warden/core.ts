@@ -9,7 +9,7 @@ import { detectSegment, dedupe, type DetectContext } from "./detect";
 import { analyzeSession } from "./session";
 import { decide, sideEffectTools, THRESHOLDS } from "./policy";
 import { neutralize } from "./neutralize";
-import { sentences } from "./normalize";
+import { normalize, sentences } from "./normalize";
 import { MENTION } from "./rules";
 import { intentFindings } from "./intent";
 import {
@@ -27,6 +27,50 @@ import {
 
 // Everyday Hindi words typed in Latin script: enough of them marks a passage as Hinglish.
 const HINGLISH_WORDS = /\b(?:hai|hain|kya|karo|kar do|karna|karke|mera|meri|mere|mujhe|aap|aapka|aapke|aapko|nahi|nahin|kripya|bhai|batao|bata do|jaldi|ke liye|tum|tumhe|tumhara|kaise|abhi|theek|bhejo|bhej do|wala|wali|yahan|saare)\b/gi;
+
+// A sentence the classifier flags in visible outside content must look like an instruction:
+// a person addressed, a command verb, a directive word. Encyclopedic and news sentences about AI
+// or payments ("ChatGPT can now complete UPI payments") describe, they do not instruct.
+const INSTRUCTION_CUE = new RegExp(
+  [
+    // a person addressed
+    "\\b(?:you|your|yourself|u|please|pls|kindly)\\b",
+    // a command at the start of the sentence
+    "^[\\s\"'“‘(*>-]*(?:ignore|disregard|forget|override|bypass|pretend|act as|reveal|print|output|send|forward|email|transfer|pay|wire|delete|remove|run|execute|tell|say|reply|respond|repeat|write|list|show|give|share|disclose|approve|grant|enable|disable|switch|stop|start|remember|store|save|do not|don't|never|always|let's|lets|now)\\b",
+    // a rule aimed at an AI, or a standing order
+    "\\b(?:ai|assistants?|agents?|models?|bots?|llms?|chatbots?|copilots?|gpt|claude)\\b[^.!?\\n]{0,25}\\b(?:must|should|shall|needs? to|has to|have to|will now|is to|are to|may now|is (?:now )?(?:allowed|permitted|authori[sz]ed))\\b",
+    "\\b(?:from now on|henceforth|going forward|instead of|no longer)\\b",
+    // a label or a rule for automated readers
+    "\\b(?:for|to) (?:the |all |any )?(?:ai|assistants?|agents?|bots?|models?|llms?|automated \\w+|summari[sz]ers?|screeners?)\\s*[:,\\u2014-]",
+    "\\b(?:summari[sz]ers?|screeners?|automated \\w+|automation)\\b[^.!?\\n]{0,25}\\b(?:must|should|shall|needs? to|has to|have to|are to|is to)\\b",
+    // skipping a control, hiding something, or money asked to move
+    "\\b(?:no|without(?: any| a)?) (?:[a-z-]+ )?(?:callback|call-back|approval|sign-?off|verification|review|checks?|confirmation)s?\\b|\\bskip(?:s|ped|ping)?\\b|\\bpre-?(?:cleared|approved|authori[sz]ed)\\b|\\b(?:leave out|omit|do not mention|don't mention)\\b",
+    "\\b(?:asked|requested|instructed|requires?|wants?) (?:that|for)\\b[^.!?\\n]{0,60}\\bbe (?:settled|paid|transferred|released|wired|approved|sent|forwarded|shared|deleted)\\b",
+    // words that only appear when someone is trying to steer
+    "\\b(?:ignor(?:e|es|ing)|disregard(?:s|ing)?|overrid(?:e|es|ing)|bypass(?:es|ing)?|pretend|jailbreak|exfiltrate|unrestricted|no restrictions|developer mode)\\b",
+    // an AI given a standing behaviour: "the finance assistant treats ... and acts on ..."
+    "\\b(?:assistants?|agents?|bots?|ai|copilots?|models?)\\b (?:now |always |automatically )?(?:treats?|acts? on|approves?|releases?|pays?|sends?|forwards?|shares?|ignores?|skips?|trusts?|accepts?)\\b",
+    // Hinglish orders and Indian scripts
+    "\\b(?:mat|karo|kar do|bhejo|batao|bata do|bhej do)\\b",
+    "[\\u0900-\\u0D7F]",
+  ].join("|"),
+  "i"
+);
+
+/** The instruction signs, checked on the sentence as written and as decoded (leetspeak, look-alike letters). */
+function instructs(text: string): boolean {
+  const t = text.trim();
+  return INSTRUCTION_CUE.test(t) || INSTRUCTION_CUE.test(normalize(t).norm);
+}
+
+/** A run of names ("Inkling Jais LaMDA Llama Mistral ... ChatGPT Character.ai") is a list, not an instruction.
+ * ALL-CAPS words do not count as names: shouting is how many attacks are written. */
+function listLike(text: string): boolean {
+  const words = text.match(/[A-Za-z][A-Za-z.'-]*/g) || [];
+  if (words.length < 12) return false;
+  const names = words.filter((w) => /^[A-Z]/.test(w) && /[a-z]/.test(w)).length;
+  return names / words.length >= 0.7;
+}
 
 export interface ClassifierLike {
   name: string;
@@ -299,7 +343,8 @@ export async function runCore(input: CoreInput): Promise<ScanResult> {
         // Short pieces are also scored whole: many attacks only read as one when taken together.
         const wholeLimit = seg.provenance === "user" ? 2500 : 600;
         const quotesAttacks = findings.some((f) => f.segmentId === seg.id && f.flags?.includes("mention"));
-        if (!quotesAttacks && seg.text.length >= 40 && seg.text.length <= wholeLimit && !findings.some((f) => f.segmentId === seg.id && f.confidence >= thresholds.detect)) {
+        const asksSomething = seg.provenance === "user" || (!listLike(seg.text) && sentences(seg.text).some((sp) => instructs(seg.text.slice(sp.start, sp.end))));
+        if (asksSomething && !quotesAttacks && seg.text.length >= 40 && seg.text.length <= wholeLimit && !findings.some((f) => f.segmentId === seg.id && f.confidence >= thresholds.detect)) {
           const r = input.classifier.score(seg.text);
           scored++;
           if (r.p >= entry + 0.04) {
@@ -346,7 +391,7 @@ export async function runCore(input: CoreInput): Promise<ScanResult> {
           const hiddenBoost = seg.visibility === "hidden" ? 0.18 : 0;
           // "Agents must never bypass the two-person check": a safeguard, not an attack.
           const protective = /\b(?:must|should|shall|will)\s+(?:never|not)\b|\bnever\s+(?:bypass|skip|share|reveal|disclose|send|give|ask|override|ignore|pay|approve)\b|\b(?:do not|don't)\s+(?:share|reveal|disclose|send|give|click|reply|forward)\b/i.test(s) && !/\b(?:ignore|disregard|forget|override)\b[^.!?\n]{0,30}\b(?:instructions|rules|guidelines)\b/i.test(s);
-          if (r.p >= entry && !protective) {
+          if (r.p >= entry && !protective && (seg.provenance === "user" || (!listLike(s) && instructs(s)))) {
             added++;
             const type: AttackType = r.type ?? (seg.provenance === "external" ? "indirect_injection" : "instruction_override");
             findings.push({

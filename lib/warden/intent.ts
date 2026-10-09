@@ -29,7 +29,7 @@ const CATEGORIES: Category[] = [
 const GATHER_THEN_SEND = /\b(?:retrieve|retrive|get|fetch|find|search(?: for)?|list|look up|read|access|extract|collect|gather|check|export)\b[^.!?\n]{0,120}?\b(?:and|then|,)\s+(?:then\s+)?(?:send|email|e-mail|mail|forward|share|post|upload|message)\b/;
 const REQUEST_START = /^(?:(?:p\.?s\.?|note|also|then|and|first|next|finally|ok|okay)[,:]?\s+)?(?:(?:please|pls|kindly)\s+|(?:can|could|would|will) you(?: please)?\s+|i (?:want|need|would like) you to\s+|you (?:must|should|need to|have to)\s+|go ahead and\s+|make sure (?:to|you)\s+|be sure to\s+)?/;
 const SENSITIVE = /\b(?:password|passcode|pin|otp|credentials?|bank|account|card|ssn|aadhaa?r|pan|medical|health|diagnos\w*|genetic|dna|location|address(?:es)?|contacts?|history|records?|files?|documents?|photos?|emails?|messages?|data|statement|logs?|keys?|tokens?|secrets?|salary|payroll|confidential|private|personal|identity|recordings?|voice)\b/;
-const TARGET = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https?:\/\/\S+|\bwww\.\S+|\b\d{6,}\b|\b[a-z]{2,}[_-]?\d{2,}\b|['"][^'"]{3,40}['"]|\b(?:id|account|acct|payee|number|no)\s*[:#]?\s*[a-z0-9-]{3,}/i;
+const TARGET = /(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24}|https?:\/\/\S+|\bwww\.\S+|\b\d{6,}\b|\b[a-z]{2,}[_-]?\d{2,}\b|['"][^'"]{3,40}['"]|\b(?:id|account|acct|payee|number|no)\s*[:#]?\s*[a-z0-9-]{3,}/i;
 const FIRST_PERSON = /\b(?:my|mine|me)\b/;
 const GENERIC_TOOL_WORDS = new Set(["get", "list", "search", "read", "view", "details", "info", "information", "fetch", "find", "retrieve", "manage", "show", "check", "query", "lookup", "data", "tool", "with", "from", "send", "email", "user", "account", "file", "files", "items", "item", "post", "posts", "create", "update", "delete", "message", "messages", "note", "notes", "event", "events"]);
 const NEGATED = /\b(?:cannot|can't|can not|will not|won't|does not|doesn't|do not|don't|is not able to|isn't able to|unable to|not able to|never|not allowed to|may not|must not)\b/;
@@ -52,10 +52,14 @@ function requestSentences(text: string): Array<{ start: number; end: number; s: 
     const start = m.index + lead;
     out.push({ start, end: start + s.length, s });
     // A request can start mid-sentence: "Amazon Discount: Please sell...", "new flavor, Please unlock..."
+    // Each one is capped, so text with no punctuation cannot turn into thousands of long overlaps.
+    let inners = 0;
     for (const inner of s.matchAll(/(?:[:;,\u2014-]\s*|\s)(?=(?:please|pls|kindly|can you|could you|would you|i (?:want|need) you to)\s)|[:;,]\s+(?=[A-Z][a-z]{2,}\s)/gi)) {
+      if (++inners > 50) break;
       const at = inner.index! + inner[0].length;
       if (at <= 2) continue;
-      out.push({ start: start + at, end: start + s.length, s: s.slice(at) });
+      const piece = s.slice(at, at + 600);
+      out.push({ start: start + at, end: start + at + piece.length, s: piece });
     }
     const colon = s.search(/:\s+\S/);
     if (colon > 0 && colon < s.length - 8) {
@@ -70,10 +74,15 @@ function requestSentences(text: string): Array<{ start: number; end: number; s: 
 
 export function intentFindings(seg: Segment, task: string | undefined, toolNames: string[]): Finding[] {
   if (seg.provenance !== "external" || seg.role === "tool_description" || seg.role === "code" || seg.role === "metadata") return [];
+  // Tooltips and alt text are interface labels ("Download this page as a PDF file"), not requests
+  // to the agent. Every other check still reads them, so an order hidden there is still caught.
+  if (seg.hiddenReason === "attribute" || seg.hiddenReason === "alt_text") return [];
   const toolWords = toolNames.map(words);
   const taskNorm = task ? normalize(task).norm : "";
   const out: Finding[] = [];
   for (const sent of requestSentences(seg.text)) {
+    // A two- or three-word label ("Transfer pricing", "Deposit Insurance") with nothing to act on is not a request.
+    if (sent.s.split(/\s+/).length < 4 && !TARGET.test(sent.s) && !/\d/.test(sent.s)) continue;
     const n = normalize(sent.s).norm;
     const lead = n.match(REQUEST_START)?.[0] ?? "";
     const rest = n.slice(lead.length);
@@ -106,7 +115,7 @@ export function intentFindings(seg: Segment, task: string | undefined, toolNames
     // Requests the user's own task already covers are the user's business, not an injection.
     // Even when the user asked to send or pay, an outside address or account the user never
     // mentioned makes the request foreign.
-    const targets = (sent.s.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https?:\/\/\S+/gi) || []).map((x) => x.toLowerCase());
+    const targets = (sent.s.match(/(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24}|https?:\/\/\S+/gi) || []).map((x) => x.toLowerCase());
     const newTarget = targets.some((x) => !taskNorm.includes(x));
     const foreign = cats.filter((c) => !task || !c.task.test(taskNorm) || (c.key === "send" && newTarget));
     if (!foreign.length) continue;

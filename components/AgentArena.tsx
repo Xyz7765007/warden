@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FileText, ShieldCheck, ShieldWarning, Wrench, Prohibit, ChatText, CheckCircle, XCircle, Pause } from "@phosphor-icons/react";
-import { SCENARIOS } from "@/lib/agent/scenarios";
+import { CUSTOM_TOOLS, SCENARIOS } from "@/lib/agent/scenarios";
 import type { Run, Step } from "@/lib/agent/reference";
 import { Button, Card, Chip, Segmented } from "./ui";
+import { MAX_UPLOAD, readJson } from "@/lib/client";
 
 interface Both {
   mode: "reference" | "live";
@@ -12,8 +13,14 @@ interface Both {
   with: Run & { costUsd?: number; model?: string };
 }
 
+const OWN = "custom";
+const OWN_TASK = "Summarise this for me.";
+
 export function AgentArena() {
   const [id, setId] = useState(SCENARIOS[0].id);
+  const [ownText, setOwnText] = useState("");
+  const [ownFile, setOwnFile] = useState<File | null>(null);
+  const [ownTask, setOwnTask] = useState(OWN_TASK);
   const [mode, setMode] = useState<"reference" | "live">("reference");
   const [liveOn, setLiveOn] = useState(false);
   const [data, setData] = useState<Both | null>(null);
@@ -21,7 +28,9 @@ export function AgentArena() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const s = SCENARIOS.find((x) => x.id === id)!;
+  const isOwn = id === OWN;
+  const s = SCENARIOS.find((x) => x.id === id) ?? SCENARIOS[0];
+  const ownReady = !!ownText.trim() || !!ownFile;
 
   useEffect(() => {
     fetch("/api/health")
@@ -40,8 +49,21 @@ export function AgentArena() {
     setShown(0);
     if (timer.current) clearInterval(timer.current);
     try {
-      const r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenario: id, mode }) });
-      const j = await r.json();
+      if (isOwn && ownFile && ownFile.size > MAX_UPLOAD) throw new Error("That file is over 4 MB. Try a smaller one.");
+      let r: Response;
+      if (isOwn && ownFile) {
+        const fd = new FormData();
+        fd.append("scenario", OWN);
+        fd.append("mode", "live");
+        fd.append("task", ownTask);
+        fd.append("file", ownFile);
+        r = await fetch("/api/agent", { method: "POST", body: fd });
+      } else if (isOwn) {
+        r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenario: OWN, mode: "live", text: ownText, task: ownTask }) });
+      } else {
+        r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenario: id, mode }) });
+      }
+      const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || "The run failed");
       setData(j);
       const total = Math.max(j.without.steps.length, j.with.steps.length) + 1;
@@ -71,6 +93,7 @@ export function AgentArena() {
             aria-selected={x.id === id}
             data-scenario={x.id}
             onClick={() => {
+              if (isOwn) setMode("reference");
               setId(x.id);
               setData(null);
               setShown(0);
@@ -81,32 +104,102 @@ export function AgentArena() {
             <div className="mt-0.5 text-[12.5px] text-muted">{x.who}</div>
           </button>
         ))}
+        <button
+          role="tab"
+          aria-selected={isOwn}
+          data-scenario={OWN}
+          onClick={() => {
+            setId(OWN);
+            setData(null);
+            setShown(0);
+            setMode("live");
+          }}
+          className={`min-w-[210px] flex-1 rounded-[var(--radius-card)] border border-dashed px-4 py-3 text-left transition-colors ${isOwn ? "border-ink bg-surface shadow-[var(--shadow-card)]" : "border-line-2 bg-surface/60 hover:bg-surface"}`}
+        >
+          <div className="text-[14.5px] font-semibold">Your own</div>
+          <div className="mt-0.5 text-[12.5px] text-muted">Paste or upload anything</div>
+        </button>
       </div>
 
       <Card className="grid grid-cols-1 gap-5 p-5 md:grid-cols-[1.4fr_1fr]">
-        <div>
-          <p className="text-[14px] leading-relaxed text-ink-2">{s.blurb}</p>
-          <div className="mt-4 rounded-[10px] bg-sunken px-4 py-3">
-            <div className="text-[12px] font-medium text-muted">The user asks the agent</div>
-            <div className="mt-1 text-[15px] font-medium">&ldquo;{s.task}&rdquo;</div>
+        {isOwn ? (
+          <div className="flex min-w-0 flex-col gap-3" data-testid="own-agent">
+            <p className="text-[14px] leading-relaxed text-ink-2">
+              Bring anything an agent might read: an email, a web page, a document, a chat message, an API reply. A real Claude agent reads it twice, without Warden and with it. Its tools are sandboxed: nothing is really sent, paid or run.
+            </p>
+            <textarea
+              id="own-agent-text"
+              value={ownText}
+              onChange={(e) => setOwnText(e.target.value)}
+              rows={6}
+              disabled={!!ownFile}
+              placeholder="Paste the content here, or attach a file below"
+              className="mono w-full resize-y rounded-[var(--radius-ctl)] border border-line-2 bg-surface p-3 text-[12.5px] leading-[1.55] disabled:opacity-50"
+            />
+            <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
+              <label className="cursor-pointer rounded-[var(--radius-ctl)] border border-line-2 bg-surface px-3 py-1.5 text-ink-2 hover:bg-sunken">
+                Attach a file
+                <input
+                  type="file"
+                  data-testid="own-agent-file"
+                  accept=".pdf,.docx,.eml,.html,.htm,.md,.txt,.json,.png,.jpg,.jpeg,.webp"
+                  className="sr-only"
+                  onChange={(e) => setOwnFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {ownFile ? (
+                <>
+                  <Chip>{ownFile.name}</Chip>
+                  <button className="underline" onClick={() => setOwnFile(null)}>
+                    Remove
+                  </button>
+                </>
+              ) : (
+                <span>PDF, Word, email, HTML, Markdown or an image, up to 4 MB</span>
+              )}
+            </div>
+            <div>
+              <label htmlFor="own-agent-task" className="text-[12px] font-medium text-muted">
+                What you ask the agent
+              </label>
+              <input id="own-agent-task" value={ownTask} onChange={(e) => setOwnTask(e.target.value)} maxLength={300} className="mt-1 h-9 w-full rounded-[var(--radius-ctl)] border border-line-2 bg-surface px-3 text-[14px]" />
+            </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
-            Reads:
-            {s.inbox.map((i) => (
-              <Chip key={i.id}>{i.label}</Chip>
-            ))}
+        ) : (
+          <div>
+            <p className="text-[14px] leading-relaxed text-ink-2">{s.blurb}</p>
+            <div className="mt-4 rounded-[10px] bg-sunken px-4 py-3">
+              <div className="text-[12px] font-medium text-muted">The user asks the agent</div>
+              <div className="mt-1 text-[15px] font-medium">&ldquo;{s.task}&rdquo;</div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
+              Reads:
+              {s.inbox.map((i) => (
+                <Chip key={i.id}>{i.label}</Chip>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex flex-col justify-between gap-4">
           <dl className="grid grid-cols-1 gap-3 text-[13.5px]">
             <div>
               <dt className="text-[12px] font-medium text-safe">A correct run</dt>
-              <dd className="mt-0.5 text-ink-2">{s.goodOutcome}</dd>
+              <dd className="mt-0.5 text-ink-2">{isOwn ? "Does only what you asked. With Warden, any action your request does not cover waits for a person." : s.goodOutcome}</dd>
             </div>
             <div>
               <dt className="text-[12px] font-medium text-threat-ink">What the attacker wants</dt>
-              <dd className="mt-0.5 text-ink-2">{s.attackerGoal}</dd>
+              <dd className="mt-0.5 text-ink-2">{isOwn ? "Whatever your content tries to make the agent do." : s.attackerGoal}</dd>
             </div>
+            {isOwn ? (
+              <div>
+                <dt className="text-[12px] font-medium text-muted">The agent&apos;s tools (sandboxed)</dt>
+                <dd className="mono mt-1 flex flex-wrap gap-1 text-[11.5px]">
+                  {CUSTOM_TOOLS.map((t) => (
+                    <Chip key={t.name}>{t.name}</Chip>
+                  ))}
+                </dd>
+              </div>
+            ) : null}
           </dl>
           <div className="flex flex-wrap items-center gap-2">
             <Segmented
@@ -115,14 +208,19 @@ export function AgentArena() {
               value={mode}
               onChange={setMode}
               options={[
-                { value: "reference", label: "Reference agent" },
+                { value: "reference", label: "Reference agent", disabled: isOwn, title: isOwn ? "The reference agent only knows the built-in scenarios" : undefined },
                 { value: "live", label: "Live Claude agent", disabled: !liveOn, title: liveOn ? undefined : "Switches on when the server has an Anthropic API key" },
               ]}
             />
-            <Button onClick={run} disabled={loading} className="ml-auto" data-testid="run-agent">
+            <Button onClick={run} disabled={loading || (isOwn && (!ownReady || !liveOn))} className="ml-auto" data-testid="run-agent">
               {loading ? "Running both" : data ? "Run again" : "Run both"}
             </Button>
           </div>
+          {isOwn ? (
+            <p className="text-[12px] leading-relaxed text-muted">
+              {liveOn ? "Runs on the live Claude agent: about 2 cents a run, 6 runs per hour." : "Your own content needs the live Claude agent, which switches on when the server has an Anthropic API key."}
+            </p>
+          ) : null}
         </div>
       </Card>
 
@@ -141,7 +239,7 @@ export function AgentArena() {
         <p className="text-[12.5px] leading-relaxed text-muted">
           {data!.mode === "reference"
             ? "Reference agent: a deterministic agent that does the user's task and, like unprotected LLM agents in public benchmarks (AgentDojo, InjecAgent), also follows instructions it finds in what it reads. Tools are sandboxed; nothing was really paid, sent or run."
-            : `Live agent: ${data!.with.model} with the same sandboxed tools. This run cost about $${((data!.without.costUsd || 0) + (data!.with.costUsd || 0)).toFixed(3)}.`}
+            : `Live agent: ${data!.with.model} with sandboxed tools. This run cost about $${((data!.without.costUsd || 0) + (data!.with.costUsd || 0)).toFixed(3)}. Strong models often refuse obvious hidden orders on their own, so both sides can end the same way; with Warden the orders were already cut out before the model read anything (its steps are on the right), so safety does not depend on the model saying no.`}
         </p>
       ) : null}
     </div>

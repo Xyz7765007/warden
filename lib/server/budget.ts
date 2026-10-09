@@ -2,8 +2,9 @@
 // dozen judged scans per visitor per hour and a daily ceiling per server instance. Past the cap,
 // scans run on the free layers only, which is the setup every judge-off number was measured on.
 
-const PER_VISITOR_PER_HOUR = 60;
-const PER_INSTANCE_PER_DAY = 3000;
+// Override with WARDEN_JUDGE_PER_VISITOR_HOUR and WARDEN_JUDGE_PER_DAY.
+const PER_VISITOR_PER_HOUR = Number(process.env.WARDEN_JUDGE_PER_VISITOR_HOUR) || 60;
+const PER_INSTANCE_PER_DAY = Number(process.env.WARDEN_JUDGE_PER_DAY) || 3000;
 
 const visits = new Map<string, number[]>();
 let day = new Date().toDateString();

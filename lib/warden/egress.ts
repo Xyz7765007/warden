@@ -173,7 +173,7 @@ const allowed = (host: string, list: string[]) => list.some((d) => host === d.to
 
 // ---------- values that came from outside content ----------
 
-const VALUE_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+|https?:\/\/[^\s"'<>)]+|\b[A-Z]{4}0[A-Z0-9]{6}\b|\b\d{9,18}\b|\b[\w.-]+@(?:upi|ok[a-z]+|ybl|paytm|ibl|axl)\b|(?:curl|wget)\s[^|\n]+\|\s*(?:ba|z)?sh/gi;
+const VALUE_RE = /(?<![\w.+-])[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}|https?:\/\/[^\s"'<>)]+|\b[A-Z]{4}0[A-Z0-9]{6}\b|\b\d{9,18}\b|(?<![\w.-])[\w.-]{1,64}@(?:upi|ok[a-z]+|ybl|paytm|ibl|axl)\b|(?:curl|wget)\s[^|\n]+\|\s*(?:ba|z)?sh/gi;
 
 function stringify(v: unknown): string {
   if (typeof v === "string") return v;

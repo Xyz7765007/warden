@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-08T09:24:48.923Z",
+ "generatedAt": "2026-10-09T10:51:22.508Z",
  "classifier": "warden-linear-v1",
  "judge": "off",
  "seeds": {
@@ -27,12 +27,12 @@
    "n": 100,
    "caught": 41,
    "misses": 59,
-   "recoveredAfter": 58
+   "recoveredAfter": 57
   },
   "heldOut": {
    "n": 90,
    "before": 29,
-   "after": 89
+   "after": 87
   },
   "falseAlarmsAfter": 0
  },

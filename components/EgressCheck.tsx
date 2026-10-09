@@ -116,6 +116,7 @@ export function EgressCheck() {
           <p className="text-[13px] leading-relaxed text-ink-2">{preset.note}</p>
           <label className="text-[12.5px] font-medium text-ink-2" htmlFor="egress-text">
             {isCall ? "The tool call the agent is about to make" : "The agent's reply"}
+            <span className="font-normal text-muted"> (edit it, or paste your own)</span>
           </label>
           <textarea id="egress-text" value={text} onChange={(e) => setText(e.target.value)} rows={isCall ? 8 : 7} className="mono w-full resize-y rounded-[var(--radius-ctl)] border border-line-2 bg-surface px-3 py-2 text-[12.5px] leading-[1.55] text-ink outline-none focus:border-ink" />
           {isCall ? (

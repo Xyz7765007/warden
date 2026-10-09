@@ -51,5 +51,17 @@ export const PROFILES: Record<string, AgentProfile & { label: string; job: strin
       { name: "run_shell", description: "Run a shell command", sideEffects: true },
     ],
   },
+  office: {
+    label: "Office assistant agent",
+    job: "Reads what the user gives it and acts with email, payments, a shell, the web, files and the company vault.",
+    tools: [
+      { name: "send_email", description: "Send an email", sideEffects: true },
+      { name: "make_payment", description: "Pay someone by bank transfer or UPI", sideEffects: true },
+      { name: "run_command", description: "Run a shell command", sideEffects: true },
+      { name: "fetch_url", description: "Open a web address", sideEffects: true },
+      { name: "read_file", description: "Read a file", sideEffects: false },
+      { name: "get_secret", description: "Read a key from the company vault", sideEffects: false },
+    ],
+  },
   chat: { label: "Chat assistant", job: "Answers the user's questions.", tools: [] },
 };

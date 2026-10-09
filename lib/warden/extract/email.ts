@@ -74,6 +74,8 @@ export async function extractEmail(raw: string, onAttachment?: AttachmentExtract
     }
   }
 
+  // An attachment that could not be read fully holds the whole email for review.
+  let partial = false;
   for (const [i, att] of (email.attachments || []).entries()) {
     const name = att.filename || `attachment-${i + 1}`;
     const mime = att.mimeType || "application/octet-stream";
@@ -85,13 +87,15 @@ export async function extractEmail(raw: string, onAttachment?: AttachmentExtract
         for (const s of sub.segments) b.segments.push({ ...s, id: `e${b.segments.length + 1}`, where: `Attachment ${name}: ${s.where}`, role: s.role === "body" ? "attachment" : s.role });
         warnings.push(...sub.warnings.map((w) => `${name}: ${w}`));
         notes.push(...sub.notes.map((w) => `${name}: ${w}`));
+        if (sub.partial) partial = true;
       } catch (e) {
-        warnings.push(`Could not read attachment ${name} (${(e as Error).message}).`);
+        partial = true;
+        warnings.push(`Could not read attachment ${name} (${(e as Error).message}), so the email is held for review.`);
       }
     } else if (/^text\//.test(mime)) {
       b.add(bytesToText(bytes), `Attachment ${name}`, { role: "attachment" });
     }
   }
   if (!b.segments.length) notes.push("The email had no readable text.");
-  return { segments: b.segments, warnings, notes };
+  return { segments: b.segments, warnings, notes, partial };
 }

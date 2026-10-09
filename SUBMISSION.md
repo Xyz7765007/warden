@@ -43,11 +43,11 @@ The features axis also asks for supporting features. Warden has all three named 
 2. InjecAgent: 99.4% of 510 attacks caught, 0 of 510 paired safe outputs flagged.
 3. jackhhao/jailbreak-classification: 87.8% caught, 0 of 123 flagged.
 4. deepset/prompt-injections: 26.7% caught, 0 of 56 flagged (the set labels plain role-play requests as attacks; Warden passes those by design).
-5. Red team: 99.7% of 3,383 disguised attacks, 0 of 144 safe texts flagged; new wordings learned and then caught on unseen disguises, 89 of 90.
-6. Independent black-box tests by reviewers who never saw our code: five rounds of new inputs (21/28, 22/40, 25/50, 31/50, then 28/50 attacks caught; 4/24, 1/35, 3/40, 3/40, 5/40 safe inputs flagged), each published as measured. Rounds 1 to 4 were followed by fixes to the families behind the misses; round 5 ran on the final build, with nothing changed after it. Replayed with the LLM judge on (Claude Sonnet 5.5), round 5 rose to 42/50 caught with 4/40 flagged, for $0.10 across all 90 inputs.
+5. Red team: 99.7% of 3,383 disguised attacks, 0 of 144 safe texts flagged; new wordings learned and then caught on unseen disguises, 87 of 90.
+6. Independent black-box tests by reviewers who never saw our code: five rounds of new inputs (21/28, 22/40, 25/50, 31/50, then 28/50 attacks caught; 4/24, 1/35, 3/40, 3/40, 5/40 safe inputs flagged), each published as measured. Rounds 1 to 4 were followed by fixes to the families behind the misses; round 5 ran on the build of 8 October. After it, a QA pass made Warden faster and stopped false alarms on real documents; round 5's inputs replayed on today's build: 28/50 caught and 3/40 flagged with the judge off, 43/50 and 2/40 with the LLM judge on (Claude Sonnet 5.5, $0.12 for all 90 inputs).
 7. Live latency: 4 ms median for text, 15 ms for a PDF.
 
-We report where it is weakest next to these numbers: images with very small text, and attacks written fresh by outsiders, where the offline layers alone catch 50% to 75% (84% on the final round with the judge on). The judge only reviews passages the free layers find unclear, so an attack that looks entirely ordinary can still pass.
+We report where it is weakest next to these numbers: images with very small text, and attacks written fresh by outsiders, where the offline layers alone catch 50% to 75% (86% on the final round with the judge on). The judge only reviews passages the free layers find unclear, so an attack that looks entirely ordinary can still pass.
 
 ## The problem statement, line by line
 
@@ -73,7 +73,7 @@ We report where it is weakest next to these numbers: images with very small text
 | Significance and relevance | AI agents now read email, invoices, tickets and web pages and can pay, send and run. One hidden line in an invoice redirected Rs 4,85,000 in our demo. Indirect injection is OWASP LLM01:2025 and ASI01; CERT-In named it in CIAD-2025-0013. |
 | Innovation and originality | Not a wrapper around an existing guardrail. Perception gap (person vs AI view), task binding against the user's request, capability-aware policy, a second line on egress with canaries and checksums, MCP rug-pull pins, an adaptive red team that trains the classifier live, and Hinglish and Indian-language coverage. |
 | Effective use of AI | A trained classifier on every sentence (runs in the browser, retrains in ms), OCR for images, a Claude judge only for unclear excerpts with quote verification, an adaptive red-team agent, and a live Claude agent protected by Warden. |
-| Technical complexity | 11 format readers (pdf.js operator walk, Word XML, MIME, CSS-aware HTML, OCR in contrast bands), stacked decoders, context-weighted rules in English and Indian languages, a check for orders aimed at the AI inside outside content, session analysis, egress checks, OCSF, 130 unit and 54 end-to-end tests. |
+| Technical complexity | 11 format readers (pdf.js operator walk, Word XML, MIME, CSS-aware HTML, OCR in contrast bands), stacked decoders, context-weighted rules in English and Indian languages, a check for orders aimed at the AI inside outside content, session analysis, egress checks, OCSF, 145 unit and 54 end-to-end tests. |
 | Agentic capability | The planner chooses checks per input, uses tools, acts (cut, hold, block, stop a tool call), recovers from failures, and learns from an attacker that adapts. |
 | Business impact | Stops invoice-redirect fraud, data exfiltration and poisoned tooling before money or data moves; 4 ms per scan; free offline layers; OCSF into the SOC. |
 | Prototype quality | Live, fast, works on any input you paste or upload; every result explains itself. |

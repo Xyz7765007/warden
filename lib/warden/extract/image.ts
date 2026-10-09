@@ -155,10 +155,15 @@ export async function shutdownOcr() {
   workerPromise = null;
 }
 
+// The faint-text search stops after this long; an image it could not finish is held for review.
+const FAINT_BUDGET_MS = 12_000;
+
 export async function extractImage(bytes: Uint8Array, name?: string): Promise<Extraction> {
   const b = new SegmentBuilder("i", "external");
   const warnings: string[] = [];
   const notes: string[] = [];
+  const started = Date.now();
+  let partial = false;
   const buf = Buffer.from(bytes);
   const meta = await sharp(buf).metadata();
   const W = meta.width || 0, H = meta.height || 0;
@@ -182,8 +187,8 @@ export async function extractImage(bytes: Uint8Array, name?: string): Promise<Ex
   try {
     visible = await ocrLines(png);
   } catch (e) {
-    warnings.push(`OCR could not run (${(e as Error).message}).`);
-    return { segments: b.segments, warnings, notes };
+    warnings.push(`OCR could not run (${(e as Error).message}), so the image was not read and is held for review.`);
+    return { segments: b.segments, warnings, notes, partial: true };
   }
   const imgH = (await sharp(png).metadata()).height || H || 1;
   const heights = visible.lines.map((l) => l.height).filter((h) => h > 0).sort((a, b2) => a - b2);
@@ -202,9 +207,15 @@ export async function extractImage(bytes: Uint8Array, name?: string): Promise<Ex
     const covered = (a: number, b2: number) => visible.lines.some((l) => Math.min(b2, l.y1) - Math.max(a, l.y0) > (b2 - a) * 0.5);
     const faint: string[] = [];
     const small: string[] = [];
-    const bands = inkBands(ink).filter(([a, b2]) => !covered(a, b2)).slice(0, 24);
+    // A band taller than a text line could ever be is a photo or a texture, not hidden text.
+    const bands = inkBands(ink).filter(([a, b2]) => b2 - a <= 200 && !covered(a, b2)).slice(0, 24);
     const gray = await sharp(png).grayscale().raw().toBuffer({ resolveWithObject: true });
     for (const [a, b2] of bands) {
+      if (Date.now() - started > FAINT_BUDGET_MS) {
+        partial = true;
+        warnings.push(`Stopped looking for faint text after ${FAINT_BUDGET_MS / 1000} seconds; part of the image was not checked, so it is held for review.`);
+        break;
+      }
       const h = b2 - a;
       const top = Math.max(0, a - 3);
       const height = Math.min(ink.height - top, h + 6);
@@ -238,8 +249,9 @@ export async function extractImage(bytes: Uint8Array, name?: string): Promise<Ex
     if (faint.length) b.add(fixOcrText(faint.join("\n")), "Faint text in the image", { visibility: "hidden", reason: "faint_ink", detail: "drawn in a colour almost identical to the background, invisible to a person", ocr: true });
     if (small.length) b.add(fixOcrText(small.join("\n")), "Very small text in the image", { visibility: "hidden", reason: "tiny_text", detail: `text under ${Math.round(tinyLimit)} pixels tall, too small to read at normal size`, ocr: true });
   } catch (e) {
-    warnings.push(`The hidden-text pass failed (${(e as Error).message}).`);
+    partial = true;
+    warnings.push(`The hidden-text pass failed (${(e as Error).message}), so the image is held for review.`);
   }
   if (!b.segments.length) notes.push(`No text found in ${name || "the image"}.`);
-  return { segments: b.segments, warnings, notes };
+  return { segments: b.segments, warnings, notes, partial };
 }

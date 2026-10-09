@@ -84,7 +84,7 @@
    "flagged": 0
   },
   "model": "claude-sonnet-5-5",
-  "costUsd": 0.0517,
+  "costUsd": 0.0518,
   "note": "Indian-script and Hinglish passages that nothing flagged now go to the judge."
  }
 }

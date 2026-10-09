@@ -79,7 +79,7 @@ export default function ProofPage() {
       <section>
         <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] md:text-[40px]">Measured, not claimed.</h1>
         <p className="mt-3 max-w-[70ch] text-[16px] leading-relaxed text-muted">
-          Every number on this page comes from a script in the repository that anyone can re-run. The LLM judge was off for all of them, so these are the floor: the free, offline layers on their own.
+          Every number on this page comes from a script in the repository that anyone can re-run. The LLM judge was off unless a number says "judge on", so these are the floor: the free, offline layers on their own.
         </p>
       </section>
 
@@ -87,13 +87,13 @@ export default function ProofPage() {
         <Big value={pct(s.detection)} label={`of ${s.attacks} attacks caught, our corpus`} note={`All 9 attack types, across all 11 input types, ${pct((100 * results.rows.filter((r) => r.label === "attack" && r.hidden).length) / s.attacks, 0)} of them hidden from people. Written by us, so it flatters us: see the independent test below.`} />
         <Big value={`${s.falsePositives} of ${s.benign}`} label="safe documents flagged, our corpus" note="Chosen to look like attacks: invoices with bank details, security articles that quote attacks, install commands." />
         <Big value={pct(injecagent.withTask.recall * 100)} label={`of ${injecagent.withTask.attacks} InjecAgent attacks caught`} note={`Public benchmark of attacks hidden in tool outputs. ${injecagent.withTask.falsePositiveRate === 0 ? "None" : pct(injecagent.withTask.falsePositiveRate * 100)} of ${injecagent.withTask.benign} paired safe outputs flagged.`} />
-        <Big value={`${latency.text.p50} ms`} label="median scan on the live site" note={`Server time for text (${latency.text.p95} ms at p95). PDFs ${latency.files.PDF.p50} ms, Word ${latency.files.Word.p50} ms, images with OCR about ${(latency.files["Image (OCR)"].p50 / 1000).toFixed(1)} s. A scan that needs the LLM judge adds about 2 to 3 s.`} />
+        <Big value={`${latency.text.p50} ms`} label="median scan on the live site" note={`Server time for text (${latency.text.p95} ms at p95). PDFs ${latency.files.PDF.p50} ms, Word ${latency.files.Word.p50} ms, images with OCR about ${(latency.files["Image (OCR)"].p50 / 1000).toFixed(1)} s. A scan that needs the LLM judge adds about 2 to 8 s, depending on how many passages it reviews (at most six).`} />
       </div>
 
       <Section
         id="independent"
         title="Independent test: attacks we never saw"
-        sub="Separate reviewers who never saw our corpus, rules or seeds wrote their own attacks and their own safe look-alikes and ran them against the live site. Each round found real gaps; we fixed the families behind them, not the strings, re-ran every benchmark, and asked a new reviewer for new inputs. Every round is shown as measured. Round 5 ran on the final build, and nothing was changed after it."
+        sub="Separate reviewers who never saw our corpus, rules or seeds wrote their own attacks and their own safe look-alikes and ran them against the live site. Each round found real gaps; we fixed the families behind them, not the strings, re-ran every benchmark, and asked a new reviewer for new inputs. Every round is shown as measured. After round 5, a QA pass made Warden faster and stopped false alarms on real documents; round 5's inputs replayed on today's build are shown beside the original result."
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {independent.rounds.map((r, i) => (
@@ -123,6 +123,14 @@ export default function ProofPage() {
                     With the LLM judge on ({r.withJudge.model.replace("claude-sonnet-5-5", "Claude Sonnet 5.5")}): {r.withJudge.attacks.caught}/{r.withJudge.attacks.n} caught, {r.withJudge.safe.flagged}/{r.withJudge.safe.n} flagged, ${r.withJudge.costUsd.toFixed(2)} for all {r.withJudge.attacks.n + r.withJudge.safe.n} inputs.
                   </span>{" "}
                   {r.withJudge.note}
+                </p>
+              ) : null}
+              {"currentBuild" in r && r.currentBuild ? (
+                <p className="mt-2 rounded-md border border-line bg-sunken px-3 py-2 text-[12.5px] leading-relaxed text-ink-2" data-testid="current-build">
+                  <span className="font-medium text-ink">
+                    Today&apos;s build, same inputs: {r.currentBuild.judgeOff.attacks.caught}/{r.currentBuild.judgeOff.attacks.n} caught and {r.currentBuild.judgeOff.safe.flagged}/{r.currentBuild.judgeOff.safe.n} flagged with the judge off; {r.currentBuild.judgeOn.attacks.caught}/{r.currentBuild.judgeOn.attacks.n} and {r.currentBuild.judgeOn.safe.flagged}/{r.currentBuild.judgeOn.safe.n} with it on (${r.currentBuild.judgeOn.costUsd.toFixed(2)}).
+                  </span>{" "}
+                  {r.currentBuild.note}
                 </p>
               ) : null}
               {"fixedAfter" in r && r.fixedAfter ? (
@@ -347,7 +355,7 @@ export default function ProofPage() {
             <Stat value={`$${costPer1000("claude-haiku-5-5").toFixed(2)}`} label="per 1,000 documents, Claude Haiku 5.5" note="The low-cost option: set WARDEN_JUDGE_MODEL=claude-haiku-5-5." />
           </div>
           <p className="mt-4 text-[12.5px] leading-relaxed text-faint">
-            Estimate from our corpus, where the safe documents were chosen to look like attacks, so ordinary traffic reaches the judge less often. Measured: replaying the final outside round with the judge on cost ${independent.rounds[independent.rounds.length - 1].withJudge?.costUsd.toFixed(2)} for {independent.rounds[independent.rounds.length - 1].attacks.n + independent.rounds[independent.rounds.length - 1].safe.n} inputs ({independent.rounds[independent.rounds.length - 1].withJudge?.judgeCalls} judge calls). Numbers marked "judge on" were measured with it; every other number on this page has the judge off.
+            Estimate from our corpus, where the safe documents were chosen to look like attacks, so ordinary traffic reaches the judge less often. Measured: replaying the final outside round with the judge on cost ${independent.rounds[independent.rounds.length - 1].withJudge?.costUsd.toFixed(2)} for {independent.rounds[independent.rounds.length - 1].attacks.n + independent.rounds[independent.rounds.length - 1].safe.n} inputs ({independent.rounds[independent.rounds.length - 1].withJudge?.judgeCalls} judge calls). Long real-world pages send more passages: Wikipedia articles, papers and READMEs cost about $0.008 each in our tests. Numbers marked "judge on" were measured with it; every other number on this page has the judge off.
           </p>
         </Card>
       </Section>
@@ -358,8 +366,8 @@ export default function ProofPage() {
             ["Very small or faint text in images", `OCR misses some 7-pixel and low-contrast text: images score ${pct(bySource.image.detected)} against 100% for every other input type.`],
             ["New wordings, before learning", `${pct(rt.novel.rate, 0)} of reworded attacks are caught by the offline layers alone. The LLM judge, when switched on, reviews borderline passages; the red-team loop shows how quickly misses are learned.`],
             ["Our own corpus flatters us", "It was built alongside the rules. That is why the public benchmarks, the red team and the independent rounds, which use attacks we did not write, sit next to it."],
-            ["Attacks written fresh by outsiders", `On attacks they had never seen, the offline layers caught between 50% and 75% across five independent rounds, and ${independent.rounds[independent.rounds.length - 1].attacks.caught} of ${independent.rounds[independent.rounds.length - 1].attacks.n} on the final build. Most misses are orders in plain business language: persona swaps, fake policy updates and requests to use the agent's own tools. With the LLM judge switched on, the same final-round inputs went to ${independent.rounds[independent.rounds.length - 1].withJudge?.attacks.caught ?? "more"} of ${independent.rounds[independent.rounds.length - 1].attacks.n}; the rest never looked unclear enough to reach it.`],
-            ["Docs about AI assistants", `In the final round, ${independent.rounds[independent.rounds.length - 1].safe.flagged} of ${independent.rounds[independent.rounds.length - 1].safe.n} safe inputs were flagged, mostly product and developer docs that describe what an assistant or its system prompt does. They are cut and passed on, not blocked, and the cut is shown for review.`],
+            ["Attacks written fresh by outsiders", `On attacks they had never seen, the offline layers caught between 50% and 75% across five independent rounds, and ${independent.rounds[independent.rounds.length - 1].attacks.caught} of ${independent.rounds[independent.rounds.length - 1].attacks.n} on the final build. Most misses are orders in plain business language: persona swaps, fake policy updates and requests to use the agent's own tools. With the LLM judge switched on, the same final-round inputs go to ${independent.rounds[independent.rounds.length - 1].currentBuild?.judgeOn.attacks.caught ?? "more"} of ${independent.rounds[independent.rounds.length - 1].attacks.n} on today's build; the rest never looked unclear enough to reach it.`],
+            ["Docs about AI assistants", `In the final round, ${independent.rounds[independent.rounds.length - 1].safe.flagged} of ${independent.rounds[independent.rounds.length - 1].safe.n} safe inputs were flagged (${independent.rounds[independent.rounds.length - 1].currentBuild?.judgeOff.safe.flagged ?? "fewer"} on today's build), mostly product and developer docs that describe what an assistant or its system prompt does. They are cut and passed on, not blocked, and the cut is shown for review.`],
             ["Role-play that never asks for harm", "Warden does not block a request just because it sets up a character. It acts when content tries to override, extract, act or hide. Some benchmark labels count role-play itself as an attack."],
           ].map(([h, b]) => (
             <Card key={h} className="p-5">

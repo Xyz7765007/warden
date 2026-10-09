@@ -4,6 +4,8 @@ export interface Extraction {
   segments: Segment[];
   warnings: string[];
   notes: string[];
+  /** Part of the input was not read (a page cap or a time budget ran out): the result is held, not passed. */
+  partial?: boolean;
 }
 
 export class SegmentBuilder {

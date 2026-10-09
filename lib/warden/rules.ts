@@ -639,7 +639,7 @@ export const RULES: Rule[] = [
     id: "ta.send-external",
     type: "tool_abuse",
     on: "norm",
-    re: /\b(?:send|forward|email|e-mail|mail|bcc|cc|reply|message|dm|post|publish|tweet|upload|share|transmit|deliver|submit|export|cc:)\b[^.!?\n]{0,90}?\b(?:to|at|with|into|on)\b[^.!?\n]{0,12}?(?:[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https?:\/\/\S+|www\.\S+|@[a-z0-9_]{3,})/g,
+    re: /\b(?:send|forward|email|e-mail|mail|bcc|cc|reply|message|dm|post|publish|tweet|upload|share|transmit|deliver|submit|export|cc:)\b[^.!?\n]{0,90}?\b(?:to|at|with|into|on)\b[^.!?\n]{0,12}?(?:(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24}|https?:\/\/\S+|www\.\S+|@[a-z0-9_]{3,})/g,
     base: 0.34,
     needsContext: true,
     why: "Tells the AI to send something to an outside address.",
@@ -780,7 +780,7 @@ export const RULES: Rule[] = [
     id: "ta.hinglish",
     type: "tool_abuse",
     on: "norm",
-    re: /\b(?:refunds?|payments?|paise|paisa|amount|transfers?|bhugtan|rakam)\b[^.!?\n]{0,30}\b(?:turant |abhi |jaldi |seedha |ek saath |sab )?(?:approve|process|kar do|karo|bhejo|bhej do|transfer karo|de do|release karo|release kar do|release kar dena|release kar dijiye|daal do)\b|\b(?:bhejo|bhej do|forward karo|forward kar do|mail karo|mail kar do|email karo|email kar do)\b[^.!?\n]{0,30}(?:[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})|(?:[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})[^.!?\n]{0,20}\b(?:pe|par|ko) (?:bhejo|bhej do|forward karo|mail karo)\b/g,
+    re: /\b(?:refunds?|payments?|paise|paisa|amount|transfers?|bhugtan|rakam)\b[^.!?\n]{0,30}\b(?:turant |abhi |jaldi |seedha |ek saath |sab )?(?:approve|process|kar do|karo|bhejo|bhej do|transfer karo|de do|release karo|release kar do|release kar dena|release kar dijiye|daal do)\b|\b(?:bhejo|bhej do|forward karo|forward kar do|mail karo|mail kar do|email karo|email kar do)\b[^.!?\n]{0,30}(?:(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24})|(?:(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24})[^.!?\n]{0,20}\b(?:pe|par|ko) (?:bhejo|bhej do|forward karo|mail karo)\b/g,
     base: 0.38,
     needsContext: true,
     why: "Hinglish: pushes a refund, payment or forward.",
@@ -973,7 +973,7 @@ export const RULES: Rule[] = [
     id: "cp.remember-future",
     type: "context_poisoning",
     on: "norm",
-    re: /\b(?:remember|memori[sz]e|store|save|note|record|keep in mind|commit to memory|add (?:this )?to (?:your )?(?:memory|knowledge(?: base)?|notes|context|long[- ]term memory)|update (?:your )?(?:memory|knowledge|instructions|preferences|profile|settings|rules))\b[^.!?\n]{0,70}?\b(?:for (?:all |every |any )?(?:future|later|next|subsequent|upcoming) (?:conversations?|sessions?|requests?|chats?|tasks?|interactions?|questions?|users?|queries|tickets)|from now on|permanently|forever|going forward|for the rest of|in (?:all|every) (?:future )?(?:conversation|chat|session)s?|across (?:all )?sessions)\b/g,
+    re: /\b(?:remember|memori[sz]e|store|save|note (?:this|it|that|down|the following)|record (?:this|it|that|the following)|keep in mind|commit to memory|add (?:this )?to (?:your )?(?:memory|knowledge(?: base)?|notes|context|long[- ]term memory)|update (?:your )?(?:memory|knowledge|instructions|preferences|profile|settings|rules))\b[^.!?\n]{0,70}?\b(?:for (?:all |every |any )?(?:future|later|next|subsequent|upcoming) (?:conversations?|sessions?|requests?|chats?|tasks?|interactions?|questions?|users?|queries|tickets)|from now on|permanently|forever|going forward|for the rest of|in (?:all|every) (?:future )?(?:conversation|chat|session)s?|across (?:all )?sessions)\b/g,
     base: 0.74,
     why: "Plants something in the AI's memory to change later answers.",
   },
@@ -1118,7 +1118,9 @@ export const RULES: Rule[] = [
     id: "ii.dear-ai",
     type: "indirect_injection",
     on: "norm",
-    re: /\b(?:dear|hey|hi|hello|attention|attn|psst|yo)\b,? (?:ai|assistant|agent|chatgpt|claude|gemini|copilot|bot|llm|robot|model|ai agent|ai assistant)\b/g,
+    // "Attention model" and "hi agent" in passing are not greetings to an AI: generic words need
+    // the vocative comma or colon, and "attention" needs an AI name or a colon.
+    re: /\b(?:dear|hey|hi|hello|psst|yo)\b,? (?:ai|chatgpt|claude|gemini|copilot|bot|llm|ai agent|ai assistant)\b|\b(?:dear|hey|hi|hello|psst|yo)\b,? (?:assistant|agent|model|robot)\b(?=\s*[,:!])|\b(?:attention|attn)\b(?:,? (?:ai|chatgpt|claude|gemini|copilot|llm|ai agents?|ai assistants?)\b|\s*:\s*(?:all |any )?(?:ai|assistants?|agents?|bots?|models?|llms?)\b)/g,
     base: 0.66,
     why: "Greets the AI directly from inside the content.",
   },
@@ -1157,7 +1159,9 @@ const AI_LOOSE = `(?:${AI_STRICT}|assistants?|agents?|models?|bots?|robots?)`;
 // Speaking TO the AI (a vocative, a label, an "if you are an AI"), not merely mentioning AI.
 export const ADDRESSEE_STRONG = new RegExp(
   [
-    `\\b(?:dear|hey|hi|hello|attention|attn|psst|yo|note to|note for|message to|message for|instructions? (?:to|for)|reminder (?:to|for)|p\\.?s\\.? (?:to|for)|important (?:to|for)|request (?:to|for)|directive (?:to|for)) (?:the |all |any |every )?${AI_LOOSE}\\b`,
+    `\\b(?:dear|hey|hi|hello|psst|yo|note to|note for|message to|message for|instructions? (?:to|for)|reminder (?:to|for)|p\\.?s\\.? (?:to|for)|important (?:to|for)|request (?:to|for)|directive (?:to|for)) (?:the |all |any |every )?${AI_LOOSE}\\b`,
+    // "Attention model" is a noun phrase; "Attention, AI" and "Attention: assistants" are addresses.
+    `\\b(?:attention|attn)\\b(?:,? (?:the |all |any |every )?${AI_STRICT}\\b|\\s*:\\s*(?:the |all |any |every )?${AI_LOOSE}\\b)`,
     `(?:^|[\\n.!?] ?)(?:the |all |any )?${AI_STRICT}(?: [a-z]+){0,4} ?[:,] `,
     `\\b(?:if|when|while) you(?:'re| are) (?:an? |the )?${AI_LOOSE}\\b`,
     `\\byou,? (?:the|an?) (?:ai|assistant|agent|model|bot|llm)\\b`,
@@ -1174,7 +1178,7 @@ export const CONCEALMENT =
   /\b(?:do not|don't|dont|never) (?:tell|inform|notify|alert|mention|reveal|show|let|ask|confirm with|check with|verify with|bother) (?:this to |it to )?(?:the |your )?(?:user|human|customer|anyone|them|him|her|operator|admin|manager|finance|team|recruiter|hiring manager)\b|\b(?:silently|quietly|secretly|covertly|discreetly|without (?:telling|informing|notifying|alerting|asking|confirmation|confirming|approval|verification|verifying|review|reviewing|checking|any checks)|no need to (?:verify|confirm|check|ask))\b|\bkeep (?:this|it) (?:secret|hidden|between us|confidential|quiet|silent|off the record)\b|\bno need to (?:flag|surface|mention|report|log|escalate|print|show|tell|notify)\b|\bwithout (?:routing|sending|showing|telling|asking|looping in|involving|cc'?ing|informing|consulting) (?:it |this |them )?(?:to |with |by )?(?:the |my |your |any )?(?:approvers?|manager|finance|compliance|audit|checker|reviewer|team|anyone)\b|\bwithout waiting for (?:the |a |any )?(?:signed |final |valid )?(?:contract|po|purchase order|approval|sign-?off|verification|confirmation|review)\b|\b(?:do not|don't) wait for (?:a |the |any )?(?:reviewers?|reviews?|approvals?|approvers?|sign-?off)\b|\bbina (?:kisi se |kisi ko )?(?:puchhe|pooche|puche|bataye|batae)\b|\bbina sawaal kiye\b|\bkisi ko (?:bhi )?(?:mat|na) (?:bhejo|batao|bolo|batana|bhejna)\b|किसी से पूछने की (?:जरूरत|ज़रूरत) नहीं|बिना (?:पूछे|बताए)|किसी को (?:मत|न) बताना|அனுமதி இல்லாமல்|অনুমতি ছাড়া|কাউকে বলো না|అనుమతి లేకుండా|\btreat (?:every|all|any) (?:confirmations?|approvals?|permissions?|consents?|checks?) as (?:already )?(?:granted|given|approved|done|passed|confirmed)\b|\bbina (?:teen-?way|3-?way) match\b|\bwithout re-?(?:verif\w*|confirm\w*|check\w*|validat\w*|approv\w*)\b|\bbina (?:kisi )?(?:check|approval|verification|confirmation)(?: ke)?\b|\bskip (?:the |any |all )?(?:usual |normal |standard |regular |required |individual |manual )?(?:reviews?|approvals?|checks?|verification|sign-?offs?|audit|call-?backs?)\b|\bkisi ko (?:mat |na |bhi mat )?(?:batana|batao|bolna|bolo)\b|\b(?:user|human|customer) (?:should|must|will|need) not (?:know|see|notice|be told)\b|\b(?:user|customer) ko (?:mat|na) (?:batao|batana|bolo)\b|\bbina (?:bataye|puche|pooche|verification|verify kiye|check kiye)\b|\b(?:chupke se|chupchap|verify mat karna|verification mat karna|check mat karna)\b|\b(?:never|do not|don't|no need to|stop|no longer) (?:ask|asking|check|checking|confirm|confirming|verify|verifying|wait|waiting) (?:for )?(?:confirmation|approval|permission|the user|anyone|review|sign-?off)\b/i;
 export const URGENCY = /\b(?:immediately|right now|urgent|urgently|asap|at once|without delay|before (?:you do |you |doing )?anything else|first thing|turant|abhi ke abhi|jaldi se|right away|within the hour|today itself)\b/i;
 export const TARGET =
-  /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https?:\/\/[^\s)]+|\bwww\.[^\s)]+|\b[a-z0-9.-]+\.(?:com|net|org|io|co|in|xyz|ru|cn|app|dev|site|info|biz|me|top|link|click)\b(?:\/\S*)?|\b\d{9,18}\b|\b[a-z]{4}0[a-z0-9]{6}\b|\b0x[0-9a-f]{40}\b|\b[\w.-]+@(?:upi|okaxis|oksbi|okhdfcbank|okicici|ybl|paytm|ibl|axl)\b/i;
+  /(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24}|https?:\/\/[^\s)]+|\bwww\.[^\s)]+|(?<![a-z0-9.-])[a-z0-9.-]{1,253}\.(?:com|net|org|io|co|in|xyz|ru|cn|app|dev|site|info|biz|me|top|link|click)\b(?:\/\S*)?|\b\d{9,18}\b|\b[a-z]{4}0[a-z0-9]{6}\b|\b0x[0-9a-f]{40}\b|(?<![\w.-])[\w.-]{1,64}@(?:upi|okaxis|oksbi|okhdfcbank|okicici|ybl|paytm|ibl|axl)\b/i;
 export const MENTION =
   /\b(?:for example|e\.g\.|such as|like this:|known as|phrases? like|strings? like|payloads? like|attacks? like|example of|examples include|an? (?:classic|common|typical|famous|well-known|known) (?:example|attack|injection|jailbreak|prompt|payload|trick)|(?:attackers?|scammers?|fraudsters?|hackers?|phishers?|criminals?) (?:often |sometimes |usually |typically |commonly |frequently |might |may |can |could |will |try to |tend to )?(?:write|use|say|try|hide|embed|insert|type|include|send|post|ask|paste|craft|put|pose as|pretend)|(?:messages?|emails?|texts?|prompts?|requests?|lines?|instructions?|calls?|chats?|DMs?) (?:like|such as)|(?:staff|employees|team members|colleagues|agents) (?:must|should|need to) (?:always |immediately )?(?:refuse|report|decline)|researchers? (?:reported|found|showed|demonstrated|discovered|said|warned)|(?:was|were) (?:widely |first |later )?(?:shared|reported|documented|patched|discovered|circulated|publici[sz]ed)|malicious (?:prompts?|inputs?|text|instructions) (?:such as|like)|injection (?:attempts?|attacks?|payloads?) (?:such as|like|include)|for instance|the (?:phrase|string|sentence|line|payload)|researchers (?:found|showed|demonstrated)|in this (?:article|post|paper|talk|blog|guide|tutorial)|we (?:detected|blocked|caught|observed|found|saw)|(?:was|were|is|are|been|being|get|gets) (?:detected|blocked|flagged|caught|filtered)|to (?:detect|block|flag|catch|filter|defend against|protect against)|how to (?:detect|defend|protect|prevent)|defend(?:s|ing)? against|protect(?:s|ing)? against|what (?:is|are|does) (?:an? )?(?:jailbreak|prompt injection|injection)|explain (?:what|how)|test (?:cases?|data|fixtures?|suite)|tests? for|examples? of (?:an? )?(?:attacks?|injections?|jailbreaks?|prompts?)|our (?:filter|guard|firewall|detector|classifier) (?:blocks|catches|flags|stops))\b/i;
 export const NEGATION_BEFORE = /\b(?:not|never|don't|dont|do not|does not|doesn't|didn't|won't|shouldn't|cannot|can't|no need to|mat|na|nahi|nahin|kabhi bhi|kabhi na)\s*(?:\w+\s+){0,2}$/i;

@@ -49,7 +49,7 @@ Record at https://warden-cyan-beta.vercel.app in a 1440 x 900 browser window. Be
 **On screen:** Proof page. Pause on the headline cards, scroll to the independent test, then the matrix, then the 3x3 grid.
 
 **Say:**
-"Every number here comes from a script anyone can re-run. Ninety-nine percent of attacks caught across nine attack types and eleven input types, with zero false alarms on our safe documents and on public benchmarks like InjecAgent. Then the hard test: outside reviewers attacked it five times with inputs we had never seen. The free offline layers catch half to three quarters of those, and every round is published as measured. Switch on the LLM judge and the final round goes from 28 to 42 of 50. We declare F3 by D3: all nine attack types, on highly varied input, with the evidence on this page, including where Warden is weakest."
+"Every number here comes from a script anyone can re-run. Ninety-nine percent of attacks caught across nine attack types and eleven input types, with zero false alarms on our safe documents and on public benchmarks like InjecAgent. Then the hard test: outside reviewers attacked it five times with inputs we had never seen. The free offline layers catch half to three quarters of those, and every round is published as measured. Switch on the LLM judge and the final round goes from 28 to 43 of 50. We declare F3 by D3: all nine attack types, on highly varied input, with the evidence on this page, including where Warden is weakest."
 
 ## 7. Close (3:10 to 3:30)
 
@@ -65,7 +65,7 @@ Record at https://warden-cyan-beta.vercel.app in a 1440 x 900 browser window. Be
 It is on at https://warden-cyan-beta.vercel.app (Claude Sonnet 5.5). Two optional additions:
 
 - **Section 2, plus 10 seconds:** switch the agent to **Live Claude agent** and press **Run both**. In our runs, the real model ignored the hidden orders on its own, and Warden still cut them out first. Say: "This is a real Claude agent with the same tools. This time it refused the hidden order by itself; Warden had already removed it. You don't want your money depending on the model saying no every time."
-- **Section 6, one line:** "With the LLM judge switched on, the final outside round goes from 28 to 42 of 50, for ten cents."
+- **Section 6, one line:** "With the LLM judge switched on, the final outside round goes from 28 to 43 of 50, for about ten cents."
 
 ## Recording tips
 

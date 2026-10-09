@@ -24,6 +24,8 @@ export async function extract(opts: {
     guessed = true;
     if (file) source = sniffBytes(file.bytes, file.name, file.mime) ?? sniffText(bytesToText(file.bytes));
     else source = sniffText(text || "");
+    // An uploaded file is outside content, never the user typing: plain text is read as a document.
+    if (file && source === "user_message") source = "markdown";
   }
   if (file && !["pdf", "docx", "image", "email"].includes(source)) text = text ?? bytesToText(file.bytes);
   if (file && source === "email") text = bytesToText(file.bytes);

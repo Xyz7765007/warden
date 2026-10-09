@@ -104,7 +104,7 @@ export function normalize(text: string): Normalized {
   const protectedIdx = new Set<number>();
   {
     const flat = chars.map((c) => c.c).join("");
-    for (const m of flat.matchAll(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https?:\/\/[^\s)<>"']+|www\.[^\s)<>"']+|(?<![\w.])@[a-z0-9_]{3,}|[\w.-]+@(?:upi|ok[a-z]+|ybl|paytm|ibl|axl)\b/g)) {
+    for (const m of flat.matchAll(/(?<![a-z0-9._%+-])[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,253}\.[a-z]{2,24}|https?:\/\/[^\s)<>"']+|www\.[^\s)<>"']+|(?<![\w.])@[a-z0-9_]{3,}|(?<![\w.-])[\w.-]{1,64}@(?:upi|ok[a-z]+|ybl|paytm|ibl|axl)\b/g)) {
       for (let k = m.index!; k < m.index! + m[0].length; k++) protectedIdx.add(chars[k].i);
     }
   }

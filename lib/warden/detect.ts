@@ -90,13 +90,21 @@ export function isBoundary(text: string, i: number): boolean {
   return false;
 }
 
+// A "sentence" in text with no punctuation could be the whole document; capping it keeps every
+// match's context bounded, so long unpunctuated input stays linear.
+const SENTENCE_REACH = 1000;
 function sentenceBounds(text: string, start: number, end: number): [number, number] {
   let s = start;
-  while (s > 0 && !isBoundary(text, s - 1)) s--;
+  while (s > 0 && start - s < SENTENCE_REACH && !isBoundary(text, s - 1)) s--;
   let e = end;
-  while (e < text.length && !isBoundary(text, e)) e++;
+  while (e < text.length && e - end < SENTENCE_REACH && !isBoundary(text, e)) e++;
   return [s, Math.min(text.length, e + 1)];
 }
+
+// One rule matching hundreds of times in one section is a flood, not hundreds of separate
+// attacks: stop after MAX_MATCHES, and if many of them were strong, treat the section as an attack.
+const MAX_MATCHES = 200;
+const FLOOD_STRONG = 50;
 
 // Rules use "[^.!?\n]" to stay inside one sentence; let dots that sit inside a token
 // (emails, web addresses, decimals) through.
@@ -167,7 +175,28 @@ function signals(sentence: string, around: string, ctx: DetectContext, rawAround
 
 function applyRule(rule: Rule, seg: Segment, n: Normalized, ctx: DetectContext, out: Finding[]) {
   const text = rule.on === "norm" ? n.norm : seg.text;
+  let matches = 0;
+  let strong = 0;
   for (const m of text.matchAll(gapFixed(rule))) {
+    if (++matches > MAX_MATCHES) {
+      if (strong >= FLOOD_STRONG) {
+        out.push({
+          id: fid(),
+          type: rule.type,
+          also: seg.provenance === "external" && rule.type !== "indirect_injection" ? ["indirect_injection"] : [],
+          segmentId: seg.id,
+          start: 0,
+          end: seg.text.length,
+          quote: seg.text.slice(0, 200),
+          confidence: 0.9,
+          severity: TYPE_SEVERITY[rule.type],
+          layer: "structure",
+          rule: "structure.flood",
+          why: `The same attack pattern (${rule.why.replace(/\.$/, "").toLowerCase()}) repeats more than ${FLOOD_STRONG} times, so the whole section is treated as an attack.`,
+        });
+      }
+      break;
+    }
     const mStart = m.index!;
     const mEnd = mStart + m[0].length;
     const [sS, sE] = sentenceBounds(text, mStart, mEnd);
@@ -309,6 +338,7 @@ function applyRule(rule: Rule, seg: Segment, n: Normalized, ctx: DetectContext, 
       decodedVia: seg.decodedVia,
       flags: flags.length ? flags : undefined,
     });
+    if (c >= 0.5) strong++;
   }
 }
 
@@ -326,7 +356,7 @@ const OBEY = /\b(follow|execute|do|obey|run|perform|answer|respond to|act on|car
 // do is how indirect injection works, however polite or official it sounds. This finds the
 // addressee (a vocative, "the assistant should", "if an assistant is handling this", "your
 // operator gave you", a field named note_to_assistant) and a directive next to it.
-const ADDR_WORDS = "(?:ai|a\\.i\\.|llms?|language models?|chatgpt|claude|gemini|copilot|chatbots?|bots?|ai[- ]?(?:assistants?|agents?|models?|systems?|tools?|readers?|bots?)|coding (?:agents?|assistants?)|llm agents?|automated (?:systems?|readers?|assistants?|agents?|accounts?|processes|tools?|summari[sz]ers?|handlers?|reviewers?|screeners?)|automation(?: (?:accounts?|systems?|bots?|tools?|agents?))?|processing assistants?|virtual assistants?|digital assistants?|assistants?|agents?)";
+const ADDR_WORDS = "(?<!\\buser[- ])(?:ai|a\\.i\\.|llms?|language models?|chatgpt|claude|gemini|copilot|chatbots?|bots?|ai[- ]?(?:assistants?|agents?|models?|systems?|tools?|readers?|bots?)|coding (?:agents?|assistants?)|llm agents?|automated (?:systems?|readers?|assistants?|agents?|accounts?|processes|tools?|summari[sz]ers?|handlers?|reviewers?|screeners?)|automation(?: (?:accounts?|systems?|bots?|tools?|agents?))?|processing assistants?|virtual assistants?|digital assistants?|assistants?|agents?)";
 const ADDR = `(?:the |your |our |this |that |any |an? |all |every )?(?:[\\w-]+ ){0,2}?${ADDR_WORDS}`;
 // Bare "assistant"/"agent" can be a person; in documents written for people it needs AI context.
 const BARE = /^(?:(?:the|your|our|this|that|any|an?|all|every) )?(?:assistants?|agents?)$/;
@@ -346,7 +376,7 @@ const ADDR_CUES: RegExp[] = [
   // "Notice for automated assistants reading this page:", "TO THE AUTOMATION ACCOUNT HANDLING THIS DESK:"
   new RegExp(`(?:^|\\n|[.!?] )(?:(?:notice|note|message|instructions?|memo|directive|attention|reminder|request|important|warning|alert|update|attn)s? (?:for|to)|to|for|attn|attention) (${ADDR})\\b[^.!?\\n]{0,60}?[:—-]`),
   // "If an assistant is handling this mailbox, ..."
-  new RegExp(`\\b(?:if|when|while) (${ADDR}) (?:is|are|reads?|handles?|processes|summari[sz]es|reviews|answers|monitors|manages|sees|is (?:reading|handling|processing|summari[sz]ing|reviewing|answering|monitoring|managing))\\b`),
+  new RegExp(`\\b(?:if|when|while) (${ADDR}) (?:reads?|handles?|processes|summari[sz]es|reviews|answers|monitors|manages|sees|(?:is|are) (?:reading|handling|processing|summari[sz]ing|reviewing|answering|monitoring|managing|looking at|going through|working on))\\b`),
   // "place your assistant into the maintenance identity ..."
   new RegExp(`\\b(?:place|put|switch|move|set|configure|reconfigure|turn) (${ADDR}) (?:into|in|to|as)\\b`),
   // "loaded into your assistant", "your operator gave you", "your upstream rules"
@@ -543,9 +573,12 @@ function structural(seg: Segment, n: Normalized, ctx: DetectContext, out: Findin
     }
   }
 
-  // Payload splitting: pieces stored in variables, then combined.
-  const assigns = [...text.matchAll(ASSIGN)];
-  if (assigns.length >= 2 && (COMBINE.test(text) || OBEY.test(text))) {
+  // Payload splitting: pieces stored in variables, then combined. A grammar or a code listing
+  // defines dozens of names; a split payload is a few pieces with the "combine" close by.
+  const allAssigns = [...text.matchAll(ASSIGN)];
+  const assigns = allAssigns.length > 12 ? [] : allAssigns;
+  const near = assigns.length >= 2 ? text.slice(Math.max(0, assigns[0].index! - 400), Math.min(text.length, assigns[assigns.length - 1].index! + 600)) : "";
+  if (assigns.length >= 2 && assigns[assigns.length - 1].index! - assigns[0].index! < 1500 && (COMBINE.test(near) || OBEY.test(near))) {
     const joined = assigns.map((a) => a[2]).join(" ").replace(/\s+/g, " ");
     const joinedTight = assigns.map((a) => a[2]).join("");
     const inner: Finding[] = [];
@@ -578,7 +611,7 @@ function structural(seg: Segment, n: Normalized, ctx: DetectContext, out: Findin
         decodedText: joined,
         decodedVia: "joining the stored pieces",
       });
-    } else if (OBEY.test(text)) {
+    } else if (OBEY.test(near)) {
       out.push({
         id: fid(),
         type: "multi_step_jailbreak",
@@ -613,12 +646,17 @@ export function detectSegment(seg: Segment, ctx: DetectContext): Finding[] {
 export function dedupe(findings: Finding[]): Finding[] {
   const sorted = [...findings].sort((a, b) => b.confidence - a.confidence);
   const kept: Finding[] = [];
+  const byKey = new Map<string, Finding[]>();
   for (const f of sorted) {
-    const clash = kept.find((k) => k.segmentId === f.segmentId && k.type === f.type && f.start < k.end && f.end > k.start);
+    const key = `${f.segmentId}\u0000${f.type}`;
+    const group = byKey.get(key) ?? [];
+    const clash = group.find((k) => f.start < k.end && f.end > k.start);
     if (clash) {
       for (const t of f.also) if (!clash.also.includes(t)) clash.also.push(t);
       continue;
     }
+    group.push(f);
+    byKey.set(key, group);
     kept.push(f);
   }
   return kept.sort((a, b) => (a.segmentId === b.segmentId ? a.start - b.start : a.segmentId.localeCompare(b.segmentId)));

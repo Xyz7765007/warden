@@ -6,6 +6,7 @@ import { SAMPLES, type Sample } from "@/lib/samples";
 import { PROFILES } from "@/lib/agent/profiles";
 import { SOURCE_KINDS, SOURCE_LABELS, type Mode, type Outage, type ScanResult, type SourceKind } from "@/lib/warden/types";
 import { ResultView } from "./ResultView";
+import { MAX_UPLOAD, readJson } from "@/lib/client";
 import { Button, Card, Chip, Label, Segmented } from "./ui";
 
 type Tab = "examples" | "own";
@@ -30,7 +31,7 @@ async function runSample(s: Sample, mode: Mode, outage: Outage | ""): Promise<Sc
     if (s.pinned) fd.append("pinned", JSON.stringify(s.pinned));
     if (s.history) fd.append("history", JSON.stringify(s.history));
     const r = await fetch("/api/scan", { method: "POST", body: fd });
-    const j = await r.json();
+    const j = await readJson(r);
     if (!r.ok) throw new Error(j.error || "Scan failed");
     return j;
   }
@@ -39,7 +40,7 @@ async function runSample(s: Sample, mode: Mode, outage: Outage | ""): Promise<Sc
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ text: s.text, source: s.source, task: s.task, agent: s.agent, pinned: s.pinned, history: s.history, mode, simulate: outage || undefined }),
   });
-  const j = await r.json();
+  const j = await readJson(r);
   if (!r.ok) throw new Error(j.error || "Scan failed");
   return j;
 }
@@ -114,6 +115,10 @@ export function ScanWorkbench() {
       setError("Paste some text or drop a file first.");
       return;
     }
+    if (file && file.size > MAX_UPLOAD) {
+      setError("That file is over 4 MB. Try a smaller one.");
+      return;
+    }
     setActive(null);
     setLoading(true);
     setError(null);
@@ -134,7 +139,7 @@ export function ScanWorkbench() {
       } else {
         r = await fetch("/api/scan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, source, agent, mode, task: task.trim() || undefined, simulate: outage || undefined }) });
       }
-      const j = await r.json();
+      const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || "Scan failed");
       setResult(j);
     } catch (e) {
@@ -299,7 +304,7 @@ export function ScanWorkbench() {
         ) : result ? (
           <ResultView result={result} agentLabel={agentLabel} onReview={() => undefined} />
         ) : (
-          <Empty onStart={() => pick(SAMPLES[0])} />
+          <Empty onStart={() => pick(SAMPLES[0])} onOwn={() => setTab("own")} />
         )}
       </div>
     </div>
@@ -342,7 +347,7 @@ function Loading() {
   );
 }
 
-function Empty({ onStart }: { onStart: () => void }) {
+function Empty({ onStart, onOwn }: { onStart: () => void; onOwn: () => void }) {
   return (
     <Card className="flex min-h-[420px] flex-col justify-center gap-5 p-8">
       <div>
@@ -357,8 +362,11 @@ function Empty({ onStart }: { onStart: () => void }) {
         <li>Hidden text, invisible characters, encodings</li>
         <li>Requests the user never made</li>
       </ul>
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
         <Button onClick={onStart}>Start with the invoice</Button>
+        <Button variant="secondary" onClick={onOwn} data-testid="try-own">
+          Test your own content
+        </Button>
       </div>
     </Card>
   );

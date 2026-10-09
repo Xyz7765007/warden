@@ -88,6 +88,9 @@ interface Run {
   where: string;
 }
 
+// A value with no spaces and URL or percent-encoding shape: an address, not a sentence.
+const LOOKS_LIKE_ADDRESS = /^(?:(?:https?:)?\/\/|www\.)\S+$|^\S*(?:%[0-9a-f]{2}|\+)\S*$|^[\w.-]+\.[a-z]{2,}(?:\/\S*)?$/i;
+
 export function extractHtml(html: string, opts: { provenance?: Provenance; prefix?: string; whereLabel?: string } = {}): Extraction {
   const b = new SegmentBuilder(opts.prefix ?? "h", opts.provenance ?? "external");
   const warnings: string[] = [];
@@ -178,7 +181,8 @@ export function extractHtml(html: string, opts: { provenance?: Provenance; prefi
       runs.push({ text: decodeEntities(attrs.alt), hide: { reason: "alt_text", detail: "image alt text, not shown on the page" }, block: ++block, where: `${label}: image alt text` });
     }
     for (const a of ["title", "aria-label", "aria-description", "data-instructions", "data-note", "data-prompt", "placeholder", "summary"]) {
-      if (attrs[a] && attrs[a].trim().length > 24) {
+      // Tooltips that are just a web address or an encoded string (citation links carry hundreds) are not language.
+      if (attrs[a] && attrs[a].trim().length > 24 && !LOOKS_LIKE_ADDRESS.test(attrs[a].trim())) {
         runs.push({ text: decodeEntities(attrs[a]), hide: { reason: "attribute", detail: `the ${a} attribute of ${describe(node)}` }, block: ++block, where: `${label}: ${a} attribute` });
       }
     }

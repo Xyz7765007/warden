@@ -219,6 +219,33 @@
     "judgeCalls": 26,
     "costUsd": 0.1045,
     "note": "The same 90 inputs on the same engine, replayed with the LLM judge switched on (default mode: only passages the free layers find unclear are sent). Nothing was tuned on these inputs. The 8 attacks still missed never reached the judge, because no layer found them unclear."
+   },
+   "currentBuild": {
+    "date": "2026-10-09",
+    "judgeOff": {
+     "attacks": {
+      "n": 50,
+      "caught": 28
+     },
+     "safe": {
+      "n": 40,
+      "flagged": 3
+     }
+    },
+    "judgeOn": {
+     "attacks": {
+      "n": 50,
+      "caught": 43
+     },
+     "safe": {
+      "n": 40,
+      "flagged": 2
+     },
+     "model": "claude-sonnet-5-5",
+     "costUsd": 0.1194,
+     "judgeCalls": 31
+    },
+    "note": "After round 5, a QA pass made every input linear-time (long unbroken text could run past the time limit), read long and scanned PDFs in full, and stopped false alarms on real web pages and documents. The same 90 inputs, replayed on that build."
    }
   }
  ]

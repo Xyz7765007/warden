@@ -3,7 +3,7 @@
 // "invisible" render-mode text are all read by AI tools but never seen by a person.
 // Scanned PDFs carry an invisible OCR layer on purpose; that case is recognised and allowed.
 
-import { getDocumentProxy, getResolvedPDFJS } from "unpdf";
+import { extractImages, getDocumentProxy, getResolvedPDFJS } from "unpdf";
 import { SegmentBuilder, type Extraction } from "./util";
 import type { HiddenReason } from "../types";
 
@@ -38,7 +38,13 @@ interface Piece {
   invisibleMode: boolean;
 }
 
-const MAX_PAGES = 25;
+// Every page is read up to these limits; whatever is left unread holds the file for review
+// rather than passing it unchecked.
+const MAX_PAGES = 300;
+const READ_BUDGET_MS = 20_000;
+// A scan has no text layer: OCR the page images of the first few pages, within a time budget.
+const SCAN_PAGES = 5;
+const SCAN_BUDGET_MS = 25_000;
 
 export async function extractPdf(bytes: Uint8Array): Promise<Extraction> {
   const b = new SegmentBuilder("p", "external");
@@ -71,9 +77,13 @@ export async function extractPdf(bytes: Uint8Array): Promise<Extraction> {
   }
 
   const pages = Math.min(doc.numPages, MAX_PAGES);
-  if (doc.numPages > MAX_PAGES) warnings.push(`Read the first ${MAX_PAGES} of ${doc.numPages} pages.`);
+  const started = Date.now();
+  let read = 0;
+  let partial = false;
 
   for (let p = 1; p <= pages; p++) {
+    if (Date.now() - started > READ_BUDGET_MS) break;
+    read = p;
     const page: any = await doc.getPage(p);
     const vp = page.getViewport({ scale: 1 });
     const W = vp.width, H = vp.height;
@@ -231,8 +241,36 @@ export async function extractPdf(bytes: Uint8Array): Promise<Extraction> {
       /* annotations are optional */
     }
   }
-  if (!b.segments.some((s) => s.role === "body")) {
-    warnings.push("The PDF has no text layer (it may be a scan). Its images were not read.");
+  if (read < doc.numPages) {
+    partial = true;
+    warnings.push(`Read ${read} of ${doc.numPages} pages in the time allowed; the rest were not checked, so the file is held for review.`);
   }
-  return { segments: b.segments, warnings, notes };
+  if (!b.segments.some((s) => s.role === "body")) {
+    // A scan: no text layer, so read the page images with OCR, the way a vision model would see them.
+    const { extractImage } = await import("./image");
+    const sharp = (await import("sharp")).default;
+    const scanStart = Date.now();
+    let scanned = 0;
+    for (let p = 1; p <= Math.min(doc.numPages, SCAN_PAGES); p++) {
+      if (Date.now() - scanStart > SCAN_BUDGET_MS) break;
+      try {
+        const images = (await extractImages(doc, p)).filter((im) => im.width * im.height >= 10_000).sort((x, y) => y.width * y.height - x.width * x.height).slice(0, 2);
+        for (const im of images) {
+          const png = await sharp(Buffer.from(im.data), { raw: { width: im.width, height: im.height, channels: im.channels } }).png().toBuffer();
+          const r = await extractImage(new Uint8Array(png), `page ${p}`);
+          for (const seg of r.segments) b.add(seg.text, `Page ${p} image: ${seg.where}`, { visibility: seg.visibility, reason: seg.hiddenReason, detail: seg.hiddenDetail, role: seg.role, ocr: true });
+          if (r.partial) partial = true;
+        }
+        scanned = p;
+      } catch (e) {
+        partial = true;
+        warnings.push(`Could not read the images on page ${p} (${(e as Error).message}).`);
+      }
+    }
+    if (scanned < doc.numPages) {
+      partial = true;
+      warnings.push(`The PDF has no text layer (it may be a scan). Read the page images of ${scanned} of ${doc.numPages} pages with OCR; the rest were not checked, so the file is held for review.`);
+    } else notes.push(`The PDF has no text layer (it may be a scan); its page images were read with OCR.`);
+  }
+  return { segments: b.segments, warnings, notes, partial };
 }
