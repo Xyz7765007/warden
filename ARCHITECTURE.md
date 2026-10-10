@@ -136,7 +136,7 @@ The layers that decide are code and a trained model, not a chatbot, so the text 
 - **Uses tools:** readers, OCR, decoders, the classifier, the judge.
 - **Intercepts everything the agent takes in:** in the live agent, every email, attachment, file and tool result (including the agent's own systems and outside tool servers) passes through Warden before the model sees it; tool lists are scanned and pinned when a server connects.
 - **Acts:** cuts attacks out and passes the rest, holds content for a person, blocks, and on the way out removes leaking links, masks secrets and stops tool calls.
-- **Recovers:** a half-parsed file, an OCR failure (OCR is time-boxed), a judge timeout or a missing key never stops a scan. The Scan page's "Simulate an outage" control fails the classifier, the judge or the file reader on purpose, and the trace shows the rest carrying on.
+- **Recovers:** a half-parsed file, an OCR failure (OCR is time-boxed), a judge timeout or a missing key never stops a scan. Warden notices a failed part by itself and says so at the top of the result. To see it on demand, the Scan page's "Test: break a part" control fails the classifier, the judge or the file reader on purpose, and the trace shows the rest carrying on.
 - **Learns:** the red-team agent adapts to what gets through; misses retrain the classifier with safe-text replay so false alarms do not creep in.
 
 ---
@@ -147,7 +147,7 @@ The layers that decide are code and a trained model, not a chatbot, so the text 
 |---|---|
 | Observability | A trace for every scan (step, result, time); the exact span acted on and the reason in plain words; OCSF export; `/api/health` layer status in the header |
 | Trainability | Online learning from misses in the browser or the server; rules are data with a reason each; three modes; `scripts/train-classifier.ts` rebuilds the model |
-| Fault tolerance | Every layer isolated; works with no API key and no network; partly read files are held, not passed; OCR and the judge are time-boxed. Shown live with "Simulate an outage" on the Scan page (classifier, judge or file reader down) |
+| Fault tolerance | Every layer isolated; works with no API key and no network; partly read files are held, not passed; OCR and the judge are time-boxed. Shown live with "Test: break a part" on the Scan page (classifier, judge or file reader) |
 
 ---
 
@@ -162,7 +162,7 @@ Self-declared position: **F3 x D3.**
 | D3: high demonstrable reliability | Reliability that can be shown | Proof page: our corpus, InjecAgent, jackhhao, deepset, red team, five independent black-box rounds, live latency | `data/eval/*.json`, `scripts/*` to re-run each |
 | Minimal disruption | Let legitimate content pass | Safe samples pass; attacks are cut out, not whole documents blocked | False alarms: 0 of 121 (corpus), 0 of 510 (InjecAgent), 0 of 123 and 0 of 56 (public sets), 0 of 144 (red-team safe set) |
 | Agentic | Plan, tools, act, recover | Live attack page, Red team page, trace | `core.ts`, `lib/agent`, `lib/redteam` |
-| Supporting features | Observability, trainability, fault tolerance | Trace, OCSF download, layer status, Learn from misses, Simulate an outage | Section 7, `tests/e2e/scan.spec.ts` |
+| Supporting features | Observability, trainability, fault tolerance | Trace, OCSF download, layer status, Learn from misses, Test: break a part | Section 7, `tests/e2e/scan.spec.ts` |
 
 Numbers and their sources are on the Proof page; every one is produced by a script in `scripts/`.
 

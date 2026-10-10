@@ -9,7 +9,12 @@ for (const s of SAMPLES) {
     await expect(result).toBeVisible({ timeout: 90_000 });
     const decision = await result.getAttribute("data-decision");
     if (s.expect === "flagged") expect(decision).not.toBe("allow");
-    else expect(decision).toBe(s.expect);
+    else if (s.expect === "depends") {
+      // Grey area: the strict and relaxed settings must reach different answers on the same content.
+      const row = page.getByTestId("by-mode");
+      await expect(row).toContainText("The setting changes the answer here");
+      expect(await row.locator('[data-mode="strict"]').getAttribute("data-decision")).not.toBe(await row.locator('[data-mode="permissive"]').getAttribute("data-decision"));
+    } else expect(decision).toBe(s.expect);
     await expect(page.getByTestId("headline")).not.toBeEmpty();
     await expect(page.getByTestId("trace")).toBeVisible();
   });

@@ -1,6 +1,7 @@
 // POST /api/scan: scan anything an agent is about to read.
 // JSON body: { text, source?, task?, agent?, tools?, history?, mode?, judge?, simulate? }
 // simulate: "classifier" | "judge" | "reader" makes that layer fail on purpose (fault-tolerance demo).
+// compareModes: true also returns byMode, the decision each strictness setting reaches on the same content.
 // or multipart form-data with a "file" field plus the same fields as strings.
 import { scan } from "@/lib/warden/scan";
 import { classifier, judge } from "@/lib/server/engine";
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
         mode: (get("mode") as Mode) || "balanced",
         judge: (get("judge") as ScanInput["judge"]) || "auto",
         simulate: (OUTAGES as readonly string[]).includes(get("simulate") || "") ? (get("simulate") as Outage) : undefined,
+        compareModes: get("compareModes") === "true",
       };
     } else {
       const body = await request.json().catch(() => null);
@@ -69,6 +71,7 @@ export async function POST(request: Request) {
         mode: ["strict", "balanced", "permissive"].includes(body.mode) ? body.mode : "balanced",
         judge: ["auto", "off", "force"].includes(body.judge) ? body.judge : "auto",
         simulate: (OUTAGES as readonly string[]).includes(body.simulate) ? body.simulate : undefined,
+        compareModes: body.compareModes === true,
       };
     }
     if (!input.text && !input.file) return Response.json({ error: "Nothing to scan." }, { status: 400 });

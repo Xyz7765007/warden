@@ -156,7 +156,7 @@ export default function HowPage() {
           {[
             ["It plans", "The planner chooses checks for each input: OCR only where there are images, decoded copies only where something is encoded, conversation checks only when there is history, the LLM judge only for passages still unclear. The trace shows the plan it ran."],
             ["It acts", "It does not just score. It cuts out the attack and passes the rest, holds content for a person, or blocks it, and its action guard stops tool calls built from flagged content."],
-            ["It recovers", "A file that half-parses, an OCR failure, a judge timeout or a missing API key does not stop the scan. Warden decides on what it could read and holds what it could not check fully. Try it: \"Simulate an outage\" on the Scan page."],
+            ["It recovers", "A file that half-parses, an OCR failure, a judge timeout or a missing API key does not stop the scan. Warden decides on what it could read and holds what it could not check fully. Try it: \"Test: break a part\" on the Scan page."],
             ["It learns", "The red-team agent adapts to what gets through. Misses retrain the classifier on the spot, and the gain carries over to disguises it never trained on (see Proof)."],
           ].map(([h, b]) => (
             <Card key={h} className="p-5">
@@ -172,7 +172,7 @@ export default function HowPage() {
           {[
             ["Observability", ["A trace for every scan: each step, its result and its timing.", "The exact words acted on, and why, in plain language.", "OCSF Detection Finding export for any SIEM.", "A live status of which layers are on."]],
             ["Trainability", ["Online learning from misses, in milliseconds, in the browser or on the server.", "Safe-text replay keeps false alarms flat.", "Rules are plain data with a reason each, easy to add to.", "Three modes to trade catch rate for friction."]],
-            ["Fault tolerance", ["Every layer isolated: one failure never stops a scan.", "Works with no API key and no network.", "Unreadable or partly read files are held, not passed.", "The judge is optional and time-boxed, with one retry.", "See it: Scan page, Simulate an outage."]],
+            ["Fault tolerance", ["Every layer isolated: one failure never stops a scan.", "Works with no API key and no network.", "Unreadable or partly read files are held, not passed.", "The judge is optional and time-boxed, with one retry.", "See it: Scan page, Test: break a part."]],
           ].map(([h, items]) => (
             <Card key={h as string} className="p-5">
               <h3 className="text-[15px] font-semibold">{h as string}</h3>

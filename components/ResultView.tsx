@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { ATTACK_LABELS, ATTACK_TYPES, DECISION_LABELS, LAYER_LABELS, SOURCE_LABELS, type Finding, type ScanResult, type Segment } from "@/lib/warden/types";
+import { ATTACK_LABELS, ATTACK_TYPES, DECISION_LABELS, LAYER_LABELS, SOURCE_LABELS, type Finding, type Mode, type ScanResult, type Segment } from "@/lib/warden/types";
 import { Button, Card, Chip, DecisionPill, Segmented, SourceChip, TypeChip } from "./ui";
 import { toOcsf } from "@/lib/ocsf";
 import { isCleanup } from "@/lib/warden/ocrfix";
@@ -93,7 +93,27 @@ function download(name: string, data: unknown) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function ResultView({ result, agentLabel, onReview }: { result: ScanResult; agentLabel?: string; onReview?: (approved: boolean) => void }) {
+const MODE_NAMES: Array<[Mode, string]> = [
+  ["strict", "Strict"],
+  ["balanced", "Balanced"],
+  ["permissive", "Relaxed"],
+];
+
+// A part that failed during this scan, in words a person understands. In real use this happens on
+// its own (a crash, a timeout, a model provider down); the Scan page can also break one on purpose.
+function failedParts(result: ScanResult): string[] {
+  const parts: string[] = [];
+  for (const t of result.trace) {
+    if (t.status !== "failed" && t.status !== "recovered") continue;
+    if (t.layer === "classifier") parts.push("the trained classifier");
+    else if (t.layer === "judge") parts.push("the LLM judge");
+    else if (t.layer === "structure") parts.push("the file reader");
+    else parts.push(t.step.toLowerCase());
+  }
+  return [...new Set(parts)];
+}
+
+export function ResultView({ result, agentLabel, onReview, mode }: { result: ScanResult; agentLabel?: string; onReview?: (approved: boolean) => void; mode?: Mode }) {
   const top = result.segments.filter((s) => !s.decodedVia && s.id !== "session");
   const session = result.segments.find((s) => s.id === "session");
   const hiddenCount = top.filter((s) => s.visibility === "hidden").length;
@@ -107,6 +127,7 @@ export function ResultView({ result, agentLabel, onReview }: { result: ScanResul
   const segById = useMemo(() => new Map(result.segments.map((s) => [s.id, s])), [result]);
   const shown = view === "ai" ? top : top.filter((s) => s.visibility === "visible");
   const decodedFor = (id: string) => result.segments.filter((s) => s.parentId === id && s.decodedVia && !isCleanup(s.decodedVia));
+  const failed = failedParts(result);
 
   return (
     <div className="flex flex-col gap-4" data-testid="result" data-decision={result.decision}>
@@ -126,6 +147,12 @@ export function ResultView({ result, agentLabel, onReview }: { result: ScanResul
           {result.headline}
         </p>
         <p className="mt-1 text-[13.5px] text-muted">{DECISION_LABELS[result.decision].plain}</p>
+        {failed.length ? (
+          <div className="mt-3 rounded-[10px] border border-hold-line bg-hold-soft px-3 py-2.5 text-[13.5px] text-hold" role="status" data-testid="failure-notice">
+            <span className="font-semibold">A part failed during this check: {failed.join(" and ")}.</span> Warden noticed on its own and carried on with the other parts
+            {result.decision === "quarantine" ? ", holding this for a person to check" : ""}. Step {result.trace.findIndex((t) => t.status === "failed" || t.status === "recovered") + 1} in &ldquo;How Warden decided&rdquo; shows what happened.
+          </div>
+        ) : null}
         <div className="mt-4 flex flex-wrap gap-1.5" aria-label="Attack types">
           {ATTACK_TYPES.map((t) => {
             const hit = result.attackTypes.includes(t);
@@ -136,6 +163,28 @@ export function ResultView({ result, agentLabel, onReview }: { result: ScanResul
             );
           })}
         </div>
+        {result.byMode ? (
+          <div className="mt-4 rounded-[10px] border border-line bg-sunken px-3 py-2.5" data-testid="by-mode">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+              <span className="text-muted">Each setting on this content:</span>
+              {MODE_NAMES.map(([m, name]) => {
+                const d = result.byMode?.[m];
+                if (!d) return null;
+                return (
+                  <span key={m} className={`inline-flex items-center gap-1.5 ${m === mode ? "font-semibold text-ink" : "text-ink-2"}`} data-mode={m} data-decision={d.decision}>
+                    {name}
+                    <DecisionPill decision={d.decision} />
+                  </span>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[12.5px] text-muted">
+              {new Set(Object.values(result.byMode).map((d) => d?.decision)).size === 1
+                ? "Same answer in every setting: this one is clear-cut. The setting only matters for grey-area content."
+                : "The setting changes the answer here: this is grey-area content, so how cautious you want to be decides it."}
+            </p>
+          </div>
+        ) : null}
         {result.decision === "quarantine" && onReview ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[10px] border border-hold-line bg-hold-soft px-3 py-2.5 text-[13.5px]">
             <span className="mr-auto text-hold">{reviewed === null ? "A person decides whether this content reaches the agent." : reviewed ? "Let through by you. Your decision is in the OCSF export." : "Kept out by you. Your decision is in the OCSF export."}</span>

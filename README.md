@@ -8,7 +8,7 @@ Built for the ET AI Hackathon 2026 (Agentic Edition), Problem 2: Agentic Cyberse
 
 | Page | What you see |
 |---|---|
-| **Scan** | 19 real attacks and safe look-alikes across all 11 input types (PDF, Word, email, web, Markdown, API and MCP responses, code, OCR text, images, chat). Each result shows what a person sees next to what the AI reads, the exact words cut out and why, and the step-by-step trace. Paste or upload your own, or simulate an outage of the classifier, the judge or the file reader and watch the rest carry on. |
+| **Scan** | 20 real attacks, safe look-alikes and one grey-area case across all 11 input types (PDF, Word, email, web, Markdown, API and MCP responses, code, OCR text, images, chat). Each result shows what a person sees next to what the AI reads, the exact words cut out and why, what the Strict, Balanced and Relaxed settings would each decide, and the step-by-step trace. Paste or upload your own, or break the classifier, the judge or the file reader on purpose and watch the rest carry on (in real use Warden notices a failed part by itself and says so on the result). |
 | **Live attack** | The same agent does the same task twice, without and with Warden: an invoice that redirects Rs 4,85,000, a Hinglish refund jailbreak, a resume that games the AI screener, a README that runs a script, a poisoned MCP tool. Below it, the second line: replies and tool calls checked on the way out. |
 | **Red team** | An attacker agent disguises attacks with 18 tricks and retries what gets through. Press "Learn from misses" and Warden retrains in your browser, then catches the retries. |
 | **Proof** | Every number, where it comes from, five independent rounds, fairness across languages, and where Warden is weakest. |

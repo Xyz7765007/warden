@@ -222,6 +222,8 @@ export interface ScanInput {
   judge?: "auto" | "off" | "force";
   /** Demo of fault tolerance: make one layer fail on purpose and watch the others carry on. */
   simulate?: Outage;
+  /** Also work out what each strictness setting would decide on the same content (the Scan page uses it). */
+  compareModes?: boolean;
 }
 
 export const OUTAGES = ["classifier", "judge", "reader"] as const;
@@ -254,6 +256,8 @@ export interface ScanResult {
     judgeChars?: number;
     costUsd: number;
   };
+  /** With compareModes: the decision each strictness setting reaches on the same content. */
+  byMode?: Partial<Record<Mode, { decision: Decision; risk: number }>>;
 }
 
 /** "the PDF", "the web page", "the API response": lower-case except acronyms. */

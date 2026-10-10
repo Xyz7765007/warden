@@ -12,10 +12,10 @@ import { Button, Card, Chip, Label, Segmented } from "./ui";
 type Tab = "examples" | "own";
 
 const OUTAGE_LABELS: Array<[Outage | "", string]> = [
-  ["", "No outage"],
-  ["classifier", "Classifier down"],
-  ["judge", "LLM judge down"],
-  ["reader", "File reader down"],
+  ["", "Test: break a part"],
+  ["classifier", "Break the classifier"],
+  ["judge", "Break the LLM judge"],
+  ["reader", "Break the file reader"],
 ];
 
 async function runSample(s: Sample, mode: Mode, outage: Outage | ""): Promise<ScanResult> {
@@ -27,6 +27,7 @@ async function runSample(s: Sample, mode: Mode, outage: Outage | ""): Promise<Sc
     fd.append("task", s.task);
     fd.append("agent", s.agent);
     fd.append("mode", mode);
+    fd.append("compareModes", "true");
     if (outage) fd.append("simulate", outage);
     if (s.pinned) fd.append("pinned", JSON.stringify(s.pinned));
     if (s.history) fd.append("history", JSON.stringify(s.history));
@@ -38,7 +39,7 @@ async function runSample(s: Sample, mode: Mode, outage: Outage | ""): Promise<Sc
   const r = await fetch("/api/scan", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text: s.text, source: s.source, task: s.task, agent: s.agent, pinned: s.pinned, history: s.history, mode, simulate: outage || undefined }),
+    body: JSON.stringify({ text: s.text, source: s.source, task: s.task, agent: s.agent, pinned: s.pinned, history: s.history, mode, simulate: outage || undefined, compareModes: true }),
   });
   const j = await readJson(r);
   if (!r.ok) throw new Error(j.error || "Scan failed");
@@ -72,6 +73,7 @@ export function ScanWorkbench() {
 
   const pick = useCallback(
     async (s: Sample, push = true) => {
+      ownRan.current = false;
       setActive(s.id);
       setLoading(true);
       setError(null);
@@ -90,14 +92,17 @@ export function ScanWorkbench() {
     [mode, outage, router]
   );
 
-  // Changing the simulated outage re-runs the open sample, so the failure shows straight away.
-  const lastOutage = useRef(outage);
+  // Changing the setting or the test outage re-runs what is open, so the effect shows straight away.
+  const lastRun = useRef({ mode, outage });
+  const ownRan = useRef(false);
   useEffect(() => {
-    if (lastOutage.current === outage) return;
-    lastOutage.current = outage;
+    if (lastRun.current.mode === mode && lastRun.current.outage === outage) return;
+    lastRun.current = { mode, outage };
     const s = SAMPLES.find((x) => x.id === active);
     if (s) pick(s, false);
-  }, [outage, active, pick]);
+    else if (ownRan.current && result) scanOwn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, outage, active, pick]);
 
   useEffect(() => {
     const id = params.get("sample");
@@ -120,6 +125,7 @@ export function ScanWorkbench() {
       return;
     }
     setActive(null);
+    ownRan.current = true;
     setLoading(true);
     setError(null);
     setResult(null);
@@ -133,11 +139,12 @@ export function ScanWorkbench() {
         fd.append("source", source);
         fd.append("agent", agent);
         fd.append("mode", mode);
+        fd.append("compareModes", "true");
         if (outage) fd.append("simulate", outage);
         if (task.trim()) fd.append("task", task.trim());
         r = await fetch("/api/scan", { method: "POST", body: fd });
       } else {
-        r = await fetch("/api/scan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, source, agent, mode, task: task.trim() || undefined, simulate: outage || undefined }) });
+        r = await fetch("/api/scan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, source, agent, mode, task: task.trim() || undefined, simulate: outage || undefined, compareModes: true }) });
       }
       const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || "Scan failed");
@@ -149,7 +156,8 @@ export function ScanWorkbench() {
     }
   }
 
-  const attacks = SAMPLES.filter((s) => !s.safe);
+  const attacks = SAMPLES.filter((s) => !s.safe && s.expect !== "depends");
+  const grey = SAMPLES.filter((s) => s.expect === "depends");
   const safe = SAMPLES.filter((s) => s.safe);
 
   return (
@@ -171,14 +179,14 @@ export function ScanWorkbench() {
             value={mode}
             onChange={setMode}
             options={[
-              { value: "strict", label: "Strict", title: "Lower bar: catches more, may hold more for review" },
-              { value: "balanced", label: "Balanced" },
-              { value: "permissive", label: "Relaxed", title: "Only clear attacks are acted on" },
+              { value: "strict", label: "Strict", title: "Holds anything doubtful for a person to check. For agents that can pay or send." },
+              { value: "balanced", label: "Balanced", title: "Cuts out clear attacks and asks the LLM judge about unclear ones." },
+              { value: "permissive", label: "Relaxed", title: "Acts only on clear attacks. Fewest interruptions." },
             ]}
           />
           <select
-            aria-label="Simulate an outage"
-            title="Make one layer fail on purpose and watch the others carry on"
+            aria-label="Test: break a part"
+            title="In real use Warden notices a failed part on its own and carries on with the rest. This breaks one on purpose so you can watch it happen."
             value={outage}
             onChange={(e) => setOutage(e.target.value as Outage | "")}
             data-testid="outage"
@@ -197,6 +205,10 @@ export function ScanWorkbench() {
             <div className="scrollbar-thin max-h-[calc(100dvh-230px)] min-h-[360px] overflow-auto">
               <ul className="divide-y divide-line" data-testid="samples">
                 {attacks.map((s) => (
+                  <SampleRow key={s.id} s={s} active={active === s.id} onPick={() => pick(s)} />
+                ))}
+                <li className="bg-sunken px-4 py-2 text-[12px] font-medium text-muted">Grey area: the Strict, Balanced or Relaxed setting decides</li>
+                {grey.map((s) => (
                   <SampleRow key={s.id} s={s} active={active === s.id} onPick={() => pick(s)} />
                 ))}
                 <li className="bg-sunken px-4 py-2 text-[12px] font-medium text-muted">Safe look-alikes: these should pass</li>
@@ -302,7 +314,7 @@ export function ScanWorkbench() {
         ) : loading ? (
           <Loading />
         ) : result ? (
-          <ResultView result={result} agentLabel={agentLabel} onReview={() => undefined} />
+          <ResultView result={result} agentLabel={agentLabel} onReview={() => undefined} mode={mode} />
         ) : (
           <Empty onStart={() => pick(SAMPLES[0])} onOwn={() => setTab("own")} />
         )}

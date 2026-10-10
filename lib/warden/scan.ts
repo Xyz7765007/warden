@@ -4,7 +4,7 @@
 
 import { extract, sniffBytes } from "./extract";
 import { runCore, type ClassifierLike, type JudgeLike } from "./core";
-import type { ScanInput, ScanResult, SourceKind } from "./types";
+import type { Mode, ScanInput, ScanResult, SourceKind } from "./types";
 import { SegmentBuilder, bytesToText } from "./extract/util";
 
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -42,24 +42,54 @@ export async function scan(input: ScanInput, deps: { classifier?: ClassifierLike
     throw new Error("simulated outage");
   };
   const classifier = input.simulate === "classifier" ? { name: deps.classifier?.name ?? "classifier", score: outage } : deps.classifier;
-  const judge = input.simulate === "judge" ? { name: deps.judge?.name ?? "LLM judge", available: true, judge: async () => outage() } : deps.judge;
-  return runCore({
-    source,
-    guessed,
-    segments: ex.segments,
-    warnings: ex.warnings,
-    notes: ex.notes,
-    toolFindings: ex.toolFindings,
-    history: input.history,
-    task: input.task,
-    agent: input.agent,
-    mode: input.mode,
-    judgeMode: input.judge,
-    classifier,
-    classifierEntry: deps.classifierEntry,
-    judge,
-    degraded,
-    startedAt: t0,
-    extractMs,
-  });
+  const baseJudge = input.simulate === "judge" ? { name: deps.judge?.name ?? "LLM judge", available: true, judge: async () => outage() } : deps.judge;
+  const mode = input.mode ?? "balanced";
+  const chars = ex.segments.reduce((n, x) => n + x.text.length, 0);
+  const compare = !!input.compareModes && chars <= COMPARE_MAX_CHARS;
+  // When the settings are compared, a passage two settings both send to the LLM judge is asked once.
+  const judge = compare ? shareJudge(baseJudge) : baseJudge;
+  const run = (m: Mode, startedAt: number) =>
+    runCore({
+      source,
+      guessed,
+      segments: compare ? structuredClone(ex.segments) : ex.segments,
+      warnings: ex.warnings,
+      notes: ex.notes,
+      toolFindings: compare ? structuredClone(ex.toolFindings) : ex.toolFindings,
+      history: input.history,
+      task: input.task,
+      agent: input.agent,
+      mode: m,
+      judgeMode: input.judge,
+      classifier,
+      classifierEntry: deps.classifierEntry,
+      judge,
+      degraded,
+      startedAt,
+      extractMs,
+    });
+  if (!compare) return run(mode, t0);
+  const [result, ...others] = await Promise.all([run(mode, t0), ...MODES.filter((m) => m !== mode).map((m) => run(m, now()))]);
+  const byMode: NonNullable<ScanResult["byMode"]> = { [mode]: { decision: result.decision, risk: result.risk } };
+  MODES.filter((m) => m !== mode).forEach((m, i) => (byMode[m] = { decision: others[i].decision, risk: others[i].risk }));
+  return { ...result, byMode };
+}
+
+const MODES: Mode[] = ["strict", "balanced", "permissive"];
+// Comparing runs the free checks three times; past this size the Scan page shows one setting only.
+const COMPARE_MAX_CHARS = 60_000;
+
+function shareJudge(judge: JudgeLike | null | undefined): JudgeLike | null | undefined {
+  if (!judge?.available) return judge;
+  const asked = new Map<string, ReturnType<JudgeLike["judge"]>>();
+  return {
+    ...judge,
+    judge(items) {
+      const key = JSON.stringify(items);
+      const first = !asked.has(key);
+      if (first) asked.set(key, judge.judge(items));
+      // The cost is counted once, by the first setting that asked.
+      return asked.get(key)!.then((r) => (first ? r : { ...r, costUsd: 0 }));
+    },
+  };
 }

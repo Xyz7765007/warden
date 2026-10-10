@@ -31,7 +31,7 @@ The features axis also asks for supporting features. Warden has all three named 
 
 - **Observability:** a step-by-step trace per scan, the exact words acted on and why, OCSF export, live layer status.
 - **Trainability:** online learning from misses, demonstrated live on the Red team page and measured on disguises it never trained on.
-- **Fault tolerance:** isolated layers, works with no key and no network, holds partly read files, time-boxed OCR and judge. Shown live: "Simulate an outage" on the Scan page fails the classifier, the judge or the file reader on purpose, and the trace shows the rest carrying on.
+- **Fault tolerance:** isolated layers, works with no key and no network, holds partly read files, time-boxed OCR and judge. In real use a failed part is noticed automatically and named at the top of the result. Shown live: "Test: break a part" on the Scan page fails the classifier, the judge or the file reader on purpose, and the trace shows the rest carrying on.
 
 ### D3: highly heterogeneous multimodal input, high degree of demonstrable reliability
 
@@ -60,7 +60,7 @@ We report where it is weakest next to these numbers: images with very small text
 | Attack types: instruction override, role change, secret extraction, tool abuse, credential theft, context poisoning, multi-step jailbreaks, encoded instructions, indirect prompt injection | All 9, each caught live by at least one sample (table above) and measured per input type on the Proof page. |
 | F3: detect at least 7 types of attack | 9 of 9, plus the supporting features above. |
 | D3: highly heterogeneous multimodal input, with a high degree of demonstrable reliability | 11 input types including images; reliability shown seven ways (above), with false alarms beside every catch rate and five independent rounds published as measured. |
-| Supporting features "(observability, trainability, fault tolerance, etc.)" | Trace, OCSF export and layer status; Learn from misses; Simulate an outage. |
+| Supporting features "(observability, trainability, fault tolerance, etc.)" | Trace, OCSF export and layer status; Learn from misses; Test: break a part. |
 | A working demo "across all areas where the team claims that it is working" | Every claim above links to a page of the live demo; "Three minutes with Warden" below walks through them. |
 | A detailed structural architecture: "process flow, key actions, decisions, model usage, and incorporation of key features" | [ARCHITECTURE.md](ARCHITECTURE.md): process flow (2), components (3), how a decision is made (4), model usage (5), agentic behaviour (6), supporting features (7), claims and evidence (8). Also the How it works page. |
 | Criterion 8: "hallucination, security, privacy, bias, reliability, and human oversight" | Hallucination: judge verdicts must quote the text exactly or are dropped. Security: the deciding layers are code and a trained model, so content cannot instruct them. Privacy: nothing stored, the judge sees at most six excerpts. Bias: measured on outsiders' Indian-language inputs (Proof, "Fair across languages"). Reliability: the seven measurements above. Human oversight: held content waits for a person, and the decision goes into the OCSF record. |
@@ -85,6 +85,6 @@ We report where it is weakest next to these numbers: images with very small text
 2. **Live attack:** Run both. Without Warden, Rs 4,85,000 goes to the attacker and the vault key is emailed out. With Warden, the right Rs 1,84,500 is paid. Scroll to "The second line" and try the presets.
 3. **Red team:** Run 40 attacks, Learn from misses, run again: the retries are caught, with 0 new false alarms.
 4. **Proof:** every number, its source, the five independent rounds, and fairness across languages.
-5. **Fault tolerance:** pick "Classifier down", "LLM judge down" or "File reader down" in Simulate an outage, and read the trace.
+5. **Fault tolerance:** pick "Break the classifier", "Break the LLM judge" or "Break the file reader" in "Test: break a part". The result says which part failed and how Warden carried on. In real use this happens on its own.
 6. **Use your own:** paste anything, or upload a PDF, Word file, email or image.
 7. **API:** on the API page, send any example to the live `/api/scan` or `/api/guard`, or attach your own file, and copy the same request as curl.

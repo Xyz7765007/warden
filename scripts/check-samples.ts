@@ -11,8 +11,8 @@ async function main() {
   let bad = 0;
   for (const s of SAMPLES) {
     const file = s.file ? { name: path.basename(s.file), bytes: new Uint8Array(fs.readFileSync(path.join("public", s.file))) } : undefined;
-    const r = await scan({ source: s.source, text: s.text, file, task: s.task, history: s.history, agent: { ...PROFILES[s.agent], pinnedTools: s.pinned }, judge: "off" }, { classifier: clf });
-    const ok = s.expect === "flagged" ? r.decision !== "allow" : r.decision === s.expect;
+    const r = await scan({ source: s.source, text: s.text, file, task: s.task, history: s.history, agent: { ...PROFILES[s.agent], pinnedTools: s.pinned }, judge: "off", compareModes: s.expect === "depends" }, { classifier: clf });
+    const ok = s.expect === "flagged" ? r.decision !== "allow" : s.expect === "depends" ? r.byMode?.strict?.decision !== r.byMode?.permissive?.decision : r.decision === s.expect;
     if (!ok) bad++;
     console.log(`${ok ? "ok  " : "FAIL"} ${s.id.padEnd(20)} ${r.decision.padEnd(10)} risk ${String(r.risk).padStart(3)} [${r.attackTypes.join(", ")}] ${r.stats.ms}ms  ${r.headline}`);
   }
