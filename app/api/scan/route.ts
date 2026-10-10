@@ -12,9 +12,13 @@ export const maxDuration = 60;
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
+// `agent` is a profile name ("finance", "support", "coding", "office"...) or an object with its
+// own tools: { "tools": [{ "name": "pay_invoice" }] }. Tools can also be sent at the top level.
 function agentFrom(v: unknown, tools: unknown, pinned: unknown): AgentProfile | undefined {
   const base = typeof v === "string" && PROFILES[v] ? PROFILES[v] : undefined;
-  const extra = Array.isArray(tools) ? tools.filter((t) => t && typeof t.name === "string").map((t) => ({ name: String(t.name), description: t.description ? String(t.description) : undefined, sideEffects: typeof t.sideEffects === "boolean" ? t.sideEffects : undefined })) : [];
+  const own = v && typeof v === "object" && Array.isArray((v as { tools?: unknown }).tools) ? ((v as { tools: unknown[] }).tools) : [];
+  const list: any[] = [...(Array.isArray(tools) ? tools : []), ...own];
+  const extra = list.filter((t) => t && typeof t.name === "string").map((t) => ({ name: String(t.name), description: t.description ? String(t.description) : undefined, sideEffects: typeof t.sideEffects === "boolean" ? t.sideEffects : undefined }));
   if (!base && !extra.length && !pinned) return undefined;
   return { ...(base ?? {}), tools: [...(base?.tools ?? []), ...extra], pinnedTools: pinned && typeof pinned === "object" ? (pinned as Record<string, string>) : undefined };
 }

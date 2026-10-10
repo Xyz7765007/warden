@@ -87,3 +87,4 @@ We report where it is weakest next to these numbers: images with very small text
 4. **Proof:** every number, its source, the five independent rounds, and fairness across languages.
 5. **Fault tolerance:** pick "Classifier down", "LLM judge down" or "File reader down" in Simulate an outage, and read the trace.
 6. **Use your own:** paste anything, or upload a PDF, Word file, email or image.
+7. **API:** on the API page, send any example to the live `/api/scan` or `/api/guard`, or attach your own file, and copy the same request as curl.

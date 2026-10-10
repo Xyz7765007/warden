@@ -13,6 +13,7 @@ Built for the ET AI Hackathon 2026 (Agentic Edition), Problem 2: Agentic Cyberse
 | **Red team** | An attacker agent disguises attacks with 18 tricks and retries what gets through. Press "Learn from misses" and Warden retrains in your browser, then catches the retries. |
 | **Proof** | Every number, where it comes from, five independent rounds, fairness across languages, and where Warden is weakest. |
 | **How it works** | The architecture, each layer's cost and failure mode, responsible-AI notes, framework mapping, the API. |
+| **API** | Both API calls, live in the browser: pick an example or attach a file, press Send request, read the answer in plain words, copy it as curl. Field tables and Python and JavaScript samples. |
 
 | | |
 |---|---|
@@ -49,6 +50,8 @@ With the LLM judge switched on (Claude Sonnet 5.5), the final round's 90 inputs 
 Live-site latency (server time): 4 ms median for text, 15 ms for a PDF, about 0.5 s for an image (OCR). When a passage is unclear enough to need the LLM judge (on in the live demo), the judge adds about 2 to 8 seconds, depending on how many passages it reviews (at most six).
 
 ## Use it
+
+Try both calls in the browser at [warden-cyan-beta.vercel.app/developers](https://warden-cyan-beta.vercel.app/developers): pick an example or attach your own file, press Send request, and copy the same request as curl. No sign-up or key.
 
 ```bash
 # What the agent is about to read

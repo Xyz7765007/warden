@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight, ArrowsClockwise } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
 import latency from "@/data/eval/latency.json";
 import { RULES } from "@/lib/warden/rules";
 import { Card, Chip } from "@/components/ui";
@@ -226,7 +227,19 @@ export default function HowPage() {
         </Card>
       </Section>
 
-      <Section id="api" title="Put it in front of any agent" sub="One HTTP call before the content reaches the model. Send text or a file, the user's task, and the tools the agent has.">
+      <Section
+        id="api"
+        title="Put it in front of any agent"
+        sub={
+          <>
+            One HTTP call before the content reaches the model. Send text or a file, the user&apos;s task, and the tools the agent has.{" "}
+            <Link href="/developers" className="font-medium text-ink underline underline-offset-2">
+              Try both calls live on the API page
+            </Link>
+            .
+          </>
+        }
+      >
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card className="min-w-0 p-5">
             <div className="mb-2 flex items-center gap-2">

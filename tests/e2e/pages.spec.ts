@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const PAGES = ["/", "/agent", "/redteam", "/proof", "/how"];
+const PAGES = ["/", "/agent", "/redteam", "/proof", "/how", "/developers"];
 const WIDTHS = [390, 1190, 1440];
 
 function watch(page: Page) {
@@ -29,7 +29,7 @@ for (const path of PAGES) {
 test("nav reaches every page and shows layer status", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  for (const [label, path] of [["Live attack", "/agent"], ["Red team", "/redteam"], ["Proof", "/proof"], ["How it works", "/how"], ["Scan", "/"]]) {
+  for (const [label, path] of [["Live attack", "/agent"], ["Red team", "/redteam"], ["Proof", "/proof"], ["How it works", "/how"], ["API", "/developers"], ["Scan", "/"]]) {
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label }).click();
     await expect(page).toHaveURL(new RegExp(`${path === "/" ? "/$" : path}`));
   }

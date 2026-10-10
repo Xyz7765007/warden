@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/redteam", label: "Red team" },
   { href: "/proof", label: "Proof" },
   { href: "/how", label: "How it works" },
+  { href: "/developers", label: "API" },
 ];
 
 export function Mark({ size = 22 }: { size?: number }) {
