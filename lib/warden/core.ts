@@ -279,7 +279,7 @@ export async function runCore(input: CoreInput): Promise<ScanResult> {
     trace.push({
       step: input.task ? "Check requests against the user's task" : "Look for requests aimed at the agent",
       detail: input.task
-        ? `${added ? `${added} request${added === 1 ? "" : "s"} the user never asked for` : "Every request in the content fits the user's task"} (task: "${input.task.slice(0, 80)}").`
+        ? `${added ? `${added} request${added === 1 ? "" : "s"} the user never asked for` : "No request outside the user's task found by this check"} (task: "${input.task.slice(0, 80)}").`
         : `${added ? `${added} request${added === 1 ? "" : "s"} aimed at the agent` : "No requests aimed at the agent"}. Pass the user's task to check requests against it.`,
       ms: Math.round(now() - t2),
       status: "ok",
